@@ -1,3 +1,6 @@
+mod vec3;
+mod vec3color;
+
 use console::style;
 use image::{ImageBuffer, RgbImage};
 use indicatif::ProgressBar;
