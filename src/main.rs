@@ -1,5 +1,6 @@
 mod vec3;
 mod vec3color;
+mod ray;
 
 use console::style;
 use image::{ImageBuffer, RgbImage};

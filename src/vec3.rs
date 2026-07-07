@@ -80,7 +80,7 @@ impl DivAssign<f64> for Vec3 {
         self.z /= other;
     }
 }
-pub type point3 = Vec3;
+pub type Point3 = Vec3;
 impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} {}", self.x, self.y, self.z)
