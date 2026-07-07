@@ -2,23 +2,35 @@ mod ray;
 mod vec3;
 mod vec3color;
 
+use crate::vec3::{Point3, Vec3, dot, unit_vector};
 use ray::Ray;
-use vec3::Vec3;
 use vec3color::Color;
 
+fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> bool {
+    let oc = center - r.origin();
+    let a = dot(r.direction(), r.direction());
+    let b = -2.0 * dot(r.direction(), oc);
+    let c = dot(oc, oc) - radius * radius;
+    let discriminant = b * b - 4.0 * a * c;
+    discriminant >= 0.0
+}
 fn ray_color(r: &Ray) -> Color {
-    let unit_direction: Vec3 = unit_vector(r.direction());
+    if hit_sphere(Point3::new_vec3(0.0, 0.0, -1.0), 0.5, r) {
+        return Color::new_vec3(1.0, 0.0, 0.0);
+    }
+    let unit_direction = unit_vector(r.direction());
     let a = 0.5 * (unit_direction.y() + 1.0);
-    (1.0 - a) * Color::new_vec3(1.0, 1.0, 1.0) + a * Color::new_vec3(0.5, 0.7, 1.0)
+    let white = Vec3::new_vec3(1.0, 1.0, 1.0);
+    let blue = Vec3::new_vec3(0.5, 0.7, 1.0);
+    (1.0 - a) * white + a * blue
 }
 
-use crate::vec3::unit_vector;
 use console::style;
 use image::{ImageBuffer, RgbImage};
 use indicatif::ProgressBar;
 
 fn main() {
-    let path = std::path::Path::new("output/book1/image2.png");
+    let path = std::path::Path::new("output/book1/image3.png");
     let prefix = path.parent().unwrap();
     std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
 
