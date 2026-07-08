@@ -6,23 +6,27 @@ use crate::vec3::{Point3, Vec3, dot, unit_vector};
 use ray::Ray;
 use vec3color::Color;
 
-fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> bool {
+fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> f64 {
     let oc = center - r.origin();
     let a = dot(r.direction(), r.direction());
     let b = -2.0 * dot(r.direction(), oc);
     let c = dot(oc, oc) - radius * radius;
     let discriminant = b * b - 4.0 * a * c;
-    discriminant >= 0.0
+    if discriminant < 0.0 {
+        -1.0
+    } else {
+        (-b - discriminant.sqrt()) / (2.0 * a)
+    }
 }
 fn ray_color(r: &Ray) -> Color {
-    if hit_sphere(Point3::new_vec3(0.0, 0.0, -1.0), 0.5, r) {
-        return Color::new_vec3(1.0, 0.0, 0.0);
+    let t = hit_sphere(Point3::new_vec3(0.0, 0.0, -1.0), 0.5, r);
+    if t > 0.0 {
+        let n = unit_vector(r.at(t) - Vec3::new_vec3(0.0, 0.0, -1.0));
+        return 0.5 * Color::new_vec3(n.x + 1.0, n.y + 1.0, n.z + 1.0);
     }
     let unit_direction = unit_vector(r.direction());
     let a = 0.5 * (unit_direction.y() + 1.0);
-    let white = Vec3::new_vec3(1.0, 1.0, 1.0);
-    let blue = Vec3::new_vec3(0.5, 0.7, 1.0);
-    (1.0 - a) * white + a * blue
+    (1.0 - a) * Vec3::new_vec3(1.0, 1.0, 1.0) + a * Vec3::new_vec3(0.5, 0.7, 1.0)
 }
 
 use console::style;
@@ -30,7 +34,7 @@ use image::{ImageBuffer, RgbImage};
 use indicatif::ProgressBar;
 
 fn main() {
-    let path = std::path::Path::new("output/book1/image3.png");
+    let path = std::path::Path::new("output/book1/image4.png");
     let prefix = path.parent().unwrap();
     std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
 
