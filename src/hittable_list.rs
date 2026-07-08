@@ -10,16 +10,20 @@ impl HittableList {
             objects: Vec::new(),
         }
     }
+    #[allow(dead_code)]
     pub fn new_with(objects: Vec<Box<dyn Hittable>>) -> Self {
         HittableList { objects }
     }
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.objects.clear();
     }
     pub fn add(&mut self, object: Box<dyn Hittable>) {
         self.objects.push(object);
     }
-    pub fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64, rec: &mut HitRecord) -> bool {
+}
+impl Hittable for HittableList {
+    fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64, rec: &mut HitRecord) -> bool {
         let mut temp_rec = HitRecord::default();
         let mut hit_anything = false;
         let mut closest_so_far = ray_tmax;

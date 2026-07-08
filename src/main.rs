@@ -1,32 +1,23 @@
+mod hittable;
+mod hittable_list;
 mod ray;
+mod rtweekend;
+mod sphere;
 mod vec3;
 mod vec3color;
-mod hittable;
-mod sphere;
-mod hittable_list;
-mod rtweekend;
 
-use crate::vec3::{Point3, Vec3, dot, unit_vector};
+use crate::hittable::{HitRecord, Hittable};
+use crate::hittable_list::HittableList;
+use crate::rtweekend::INFINITY;
+use crate::sphere::Sphere;
+use crate::vec3::{Point3, Vec3, unit_vector};
 use ray::Ray;
 use vec3color::Color;
 
-fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> f64 {
-    let oc = center - r.origin();
-    let a = dot(r.direction(), r.direction());
-    let b = -2.0 * dot(r.direction(), oc);
-    let c = dot(oc, oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-b - discriminant.sqrt()) / (2.0 * a)
-    }
-}
-fn ray_color(r: &Ray) -> Color {
-    let t = hit_sphere(Point3::new_vec3(0.0, 0.0, -1.0), 0.5, r);
-    if t > 0.0 {
-        let n = unit_vector(r.at(t) - Vec3::new_vec3(0.0, 0.0, -1.0));
-        return 0.5 * Color::new_vec3(n.x + 1.0, n.y + 1.0, n.z + 1.0);
+fn ray_color(r: &Ray, world: &dyn Hittable) -> Color {
+    let mut rec = HitRecord::default();
+    if world.hit(r, 0.0, INFINITY, &mut rec) {
+        return 0.5 * (rec.normal + Color::new_vec3(1.0, 1.0, 1.0));
     }
     let unit_direction = unit_vector(r.direction());
     let a = 0.5 * (unit_direction.y() + 1.0);
@@ -38,7 +29,7 @@ use image::{ImageBuffer, RgbImage};
 use indicatif::ProgressBar;
 
 fn main() {
-    let path = std::path::Path::new("output/book1/image4.png");
+    let path = std::path::Path::new("output/book1/image5.png");
     let prefix = path.parent().unwrap();
     std::fs::create_dir_all(prefix).expect("Cannot create all the parents");
 
@@ -46,6 +37,13 @@ fn main() {
     let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let image_height = if image_height < 1 { 1 } else { image_height };
+
+    let mut world = HittableList::new();
+    world.add(Box::new(Sphere::new(Point3::new_vec3(0.0, 0.0, -1.0), 0.5)));
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(0.0, -100.5, -1.0),
+        100.0,
+    )));
 
     let focal_length = 1.0;
     let viewport_height = 2.0;
@@ -83,7 +81,7 @@ fn main() {
             let ray_direction = pixel_center - camera_center;
             let r = Ray::new_ray(camera_center, ray_direction);
             // 计算颜色
-            let pixel_color = ray_color(&r);
+            let pixel_color = ray_color(&r, &world);
             // 将 [0,1] 映射到 [0,255] 的 u8
             let rbyte = (255.999 * pixel_color.x()) as u8;
             let gbyte = (255.999 * pixel_color.y()) as u8;
