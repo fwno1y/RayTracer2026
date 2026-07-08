@@ -5,6 +5,7 @@ mod rtweekend;
 mod sphere;
 mod vec3;
 mod vec3color;
+mod interval;
 
 use crate::hittable::{HitRecord, Hittable};
 use crate::hittable_list::HittableList;
