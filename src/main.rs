@@ -1,6 +1,7 @@
 mod ray;
 mod vec3;
 mod vec3color;
+mod hittable;
 
 use crate::vec3::{Point3, Vec3, dot, unit_vector};
 use ray::Ray;
