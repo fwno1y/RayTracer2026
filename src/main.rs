@@ -4,6 +4,7 @@ mod vec3color;
 mod hittable;
 mod sphere;
 mod hittable_list;
+mod rtweekend;
 
 use crate::vec3::{Point3, Vec3, dot, unit_vector};
 use ray::Ray;
