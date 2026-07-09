@@ -1,11 +1,14 @@
 use crate::interval::Interval;
+use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::{Point3, Vec3, dot};
+use std::rc::Rc;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub p: Point3,
     pub normal: Vec3,
+    pub mat: Option<Rc<dyn Material>>,
     pub t: f64,
     pub front_face: bool,
 }
@@ -25,6 +28,7 @@ impl Default for HitRecord {
         HitRecord {
             p: Point3::new_vec3(0.0, 0.0, 0.0),
             normal: Vec3::new_vec3(0.0, 0.0, 0.0),
+            mat: None,
             t: 0.0,
             front_face: false,
         }

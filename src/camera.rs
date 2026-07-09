@@ -3,7 +3,7 @@ use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::rtweekend::INFINITY;
 use crate::rtweekend::random_double;
-use crate::vec3::{Point3, Vec3, random_unit_vector, unit_vector};
+use crate::vec3::{Point3, Vec3, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
 
@@ -102,14 +102,19 @@ impl Camera {
     fn sample_square() -> Vec3 {
         Vec3::new_vec3(random_double() - 0.5, random_double() - 0.5, 0.0)
     }
+    #[allow(clippy::only_used_in_recursion)]
     fn ray_color(&self, r: &Ray, depth: u32, world: &dyn Hittable) -> Color {
         if depth == 0 {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let direction = rec.normal + random_unit_vector();
-            return self.albedo * self.ray_color(&Ray::new_ray(rec.p, direction), depth - 1, world);
+            if let Some(mat) = &rec.mat {
+                if let Some((attenuation, scattered)) = mat.scatter(r, &rec) {
+                    return attenuation * self.ray_color(&scattered, depth - 1, world);
+                }
+            }
+            return Color::new_vec3(0.0, 0.0, 0.0);
         }
         let unit_direction = unit_vector(r.direction());
         let a = 0.5 * (unit_direction.y() + 1.0);
