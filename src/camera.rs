@@ -4,7 +4,7 @@ use crate::ray::Ray;
 use crate::rtweekend::INFINITY;
 use crate::rtweekend::random_double;
 use crate::vec3::{Point3, Vec3, random_unit_vector, unit_vector};
-use crate::vec3color::Color;
+use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
 
 #[allow(dead_code)]
@@ -40,9 +40,9 @@ impl Camera {
                 // 平均颜色
                 pixel_color *= self.pixel_samples_scale;
                 // 写入像素
-                let rbyte = (256.0 * intensity.clamp(pixel_color.x())) as u8;
-                let gbyte = (256.0 * intensity.clamp(pixel_color.y())) as u8;
-                let bbyte = (256.0 * intensity.clamp(pixel_color.z())) as u8;
+                let rbyte = (256.0 * intensity.clamp(linear_to_gemma(pixel_color.x()))) as u8;
+                let gbyte = (256.0 * intensity.clamp(linear_to_gemma(pixel_color.y()))) as u8;
+                let bbyte = (256.0 * intensity.clamp(linear_to_gemma(pixel_color.z()))) as u8;
                 *img.get_pixel_mut(i, j) = image::Rgb([rbyte, gbyte, bbyte]);
             }
         }

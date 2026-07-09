@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let path = std::path::Path::new("output/book1/image11.png");
+    let path = std::path::Path::new("output/book1/image12.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     final_img.save(path)?;
 
