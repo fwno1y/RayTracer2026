@@ -31,7 +31,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         albedo: Color::new_vec3(0.1, 0.2, 0.5),
     });
     let material_left = Rc::new(Dielectric {
-        refractive_index: 1.00 / 1.33,
+        refractive_index: 1.50,
+    });
+    let material_bubble = Rc::new(Dielectric {
+        refractive_index: 1.00 / 1.50,
     });
     let material_right = Rc::new(Metal {
         albedo: Color::new_vec3(0.8, 0.6, 0.2),
@@ -54,6 +57,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         material_left.clone(),
     )));
     world.add(Box::new(Sphere::new(
+        Point3::new_vec3(-1.0, 0.0, -1.0),
+        0.4,
+        material_bubble.clone(),
+    )));
+    world.add(Box::new(Sphere::new(
         Point3::new_vec3(1.0, 0.0, -1.0),
         0.5,
         material_right.clone(),
@@ -66,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::initialize(aspect_ratio, image_width, samples_per_pixel, max_depth);
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image17.png");
+    let path = std::path::Path::new("output/book1/image18.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
