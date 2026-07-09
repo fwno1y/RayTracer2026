@@ -1,26 +1,21 @@
+mod camera;
 mod hittable;
 mod hittable_list;
+mod interval;
 mod ray;
 mod rtweekend;
 mod sphere;
 mod vec3;
 mod vec3color;
-mod interval;
-mod camera;
 
-use crate::hittable::{HitRecord, Hittable};
 use crate::hittable_list::HittableList;
 use crate::rtweekend::INFINITY;
 use crate::sphere::Sphere;
-use crate::vec3::{Point3, Vec3, unit_vector};
-use ray::Ray;
-use vec3color::Color;
+use crate::vec3::Point3;
 use camera::Camera;
 
 use console::style;
-use image::{ImageBuffer, RgbImage};
-use indicatif::ProgressBar;
-use crate::interval::Interval;
+use image::RgbImage;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
@@ -37,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::initialize(aspect_ratio, image_width, samples_per_pixel);
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image5.png");
+    let path = std::path::Path::new("output/book1/image6.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
@@ -46,5 +41,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         style(path.to_str().unwrap()).yellow()
     );
     Ok(())
-
 }
