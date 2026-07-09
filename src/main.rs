@@ -74,6 +74,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let lookfrom = Point3::new_vec3(-2.0, 2.0, 1.0);
     let lookat = Point3::new_vec3(0.0, 0.0, -1.0);
     let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 10.0;
+    let focus_dist = 3.4;
     let camera = Camera::initialize(
         aspect_ratio,
         image_width,
@@ -83,10 +85,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         lookfrom,
         lookat,
         vup,
+        defocus_angle,
+        focus_dist,
     );
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image21.png");
+    let path = std::path::Path::new("output/book1/image22.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
