@@ -13,6 +13,7 @@ pub struct Camera {
     image_width: u32,
     samples_per_pixel: u32,
     max_depth: u32,
+    albedo: f64, //反射率
     image_height: u32,
     pixel_samples_scale: f64,
     center: Point3,
@@ -34,7 +35,7 @@ impl Camera {
 
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    pixel_color += Self::ray_color(&r, self.max_depth, world);
+                    pixel_color += self.ray_color(&r, self.max_depth, world);
                 }
                 // 平均颜色
                 pixel_color *= self.pixel_samples_scale;
@@ -52,6 +53,7 @@ impl Camera {
         image_width: u32,
         samples_per_pixel: u32,
         max_depth: u32,
+        albedo: f64,
     ) -> Self {
         let image_height = (image_width as f64 / aspect_ratio) as u32;
         let image_height = if image_height < 1 { 1 } else { image_height };
@@ -79,6 +81,7 @@ impl Camera {
             image_width,
             samples_per_pixel,
             max_depth,
+            albedo,
             image_height,
             pixel_samples_scale,
             center,
@@ -99,14 +102,14 @@ impl Camera {
     fn sample_square() -> Vec3 {
         Vec3::new_vec3(random_double() - 0.5, random_double() - 0.5, 0.0)
     }
-    fn ray_color(r: &Ray, depth: u32, world: &dyn Hittable) -> Color {
+    fn ray_color(&self, r: &Ray, depth: u32, world: &dyn Hittable) -> Color {
         if depth == 0 {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
             let direction = rec.normal + random_unit_vector();
-            return 0.5 * Self::ray_color(&Ray::new_ray(rec.p, direction), depth - 1, world);
+            return self.albedo * self.ray_color(&Ray::new_ray(rec.p, direction), depth - 1, world);
         }
         let unit_direction = unit_vector(r.direction());
         let a = 0.5 * (unit_direction.y() + 1.0);
