@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::initialize(aspect_ratio, image_width, samples_per_pixel, max_depth);
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image9.png");
+    let path = std::path::Path::new("output/book1/image10.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

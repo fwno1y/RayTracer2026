@@ -3,7 +3,7 @@ use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::rtweekend::INFINITY;
 use crate::rtweekend::random_double;
-use crate::vec3::{Point3, Vec3, random_on_hemisphere, unit_vector};
+use crate::vec3::{Point3, Vec3, random_unit_vector, unit_vector};
 use crate::vec3color::Color;
 use image::RgbImage;
 
@@ -105,7 +105,7 @@ impl Camera {
         }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let direction = random_on_hemisphere(rec.normal);
+            let direction = rec.normal + random_unit_vector();
             return 0.5 * Self::ray_color(&Ray::new_ray(rec.p, direction), depth - 1, world);
         }
         let unit_direction = unit_vector(r.direction());
