@@ -12,6 +12,7 @@ pub struct Camera {
     aspect_ratio: f64,
     image_width: u32,
     samples_per_pixel: u32,
+    max_depth: u32,
     image_height: u32,
     pixel_samples_scale: f64,
     center: Point3,
@@ -29,24 +30,29 @@ impl Camera {
 
         for j in 0..height {
             for i in 0..width {
-                let mut color = Color::new_vec3(0.0, 0.0, 0.0);
+                let mut pixel_color = Color::new_vec3(0.0, 0.0, 0.0);
 
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    color += Self::ray_color(&r, world, 100);
+                    pixel_color += Self::ray_color(&r, self.max_depth, world);
                 }
                 // 平均颜色
-                color *= self.pixel_samples_scale;
+                pixel_color *= self.pixel_samples_scale;
                 // 写入像素
-                let rbyte = (256.0 * intensity.clamp(color.x())) as u8;
-                let gbyte = (256.0 * intensity.clamp(color.y())) as u8;
-                let bbyte = (256.0 * intensity.clamp(color.z())) as u8;
+                let rbyte = (256.0 * intensity.clamp(pixel_color.x())) as u8;
+                let gbyte = (256.0 * intensity.clamp(pixel_color.y())) as u8;
+                let bbyte = (256.0 * intensity.clamp(pixel_color.z())) as u8;
                 *img.get_pixel_mut(i, j) = image::Rgb([rbyte, gbyte, bbyte]);
             }
         }
         img
     }
-    pub fn initialize(aspect_ratio: f64, image_width: u32, samples_per_pixel: u32) -> Self {
+    pub fn initialize(
+        aspect_ratio: f64,
+        image_width: u32,
+        samples_per_pixel: u32,
+        max_depth: u32,
+    ) -> Self {
         let image_height = (image_width as f64 / aspect_ratio) as u32;
         let image_height = if image_height < 1 { 1 } else { image_height };
 
@@ -72,6 +78,7 @@ impl Camera {
             aspect_ratio,
             image_width,
             samples_per_pixel,
+            max_depth,
             image_height,
             pixel_samples_scale,
             center,
@@ -92,14 +99,14 @@ impl Camera {
     fn sample_square() -> Vec3 {
         Vec3::new_vec3(random_double() - 0.5, random_double() - 0.5, 0.0)
     }
-    fn ray_color(r: &Ray, world: &dyn Hittable, depth: u32) -> Color {
+    fn ray_color(r: &Ray, depth: u32, world: &dyn Hittable) -> Color {
         if depth == 0 {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
             let direction = random_on_hemisphere(rec.normal);
-            return 0.5 * Self::ray_color(&Ray::new_ray(rec.p, direction), world, depth - 1);
+            return 0.5 * Self::ray_color(&Ray::new_ray(rec.p, direction), depth - 1, world);
         }
         let unit_direction = unit_vector(r.direction());
         let a = 0.5 * (unit_direction.y() + 1.0);
