@@ -10,7 +10,7 @@ mod vec3;
 mod vec3color;
 
 use crate::hittable_list::HittableList;
-use crate::rtweekend::INFINITY;
+use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
 use crate::sphere::Sphere;
 use crate::vec3::{Point3, Vec3};
 use camera::Camera;
@@ -23,59 +23,80 @@ use image::RgbImage;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
-    let material_ground = Rc::new(Lambertian {
-        albedo: Color::new_vec3(0.8, 0.8, 0.0),
+
+    let ground_material = Rc::new(Lambertian {
+        albedo: Color::new_vec3(0.5, 0.5, 0.5),
     });
-    let material_center = Rc::new(Lambertian {
-        albedo: Color::new_vec3(0.1, 0.2, 0.5),
-    });
-    let material_left = Rc::new(Dielectric {
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(0.0, -1000.0, 0.0),
+        1000.0,
+        ground_material,
+    )));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = random_double();
+            let center = Point3::new_vec3(
+                a as f64 + 0.9 * random_double(),
+                0.2,
+                b as f64 + 0.9 * random_double(),
+            );
+            if (center - Point3::new_vec3(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.8 {
+                    let albedo = Color::random() * Color::random();
+                    let sphere_material = Rc::new(Lambertian { albedo });
+                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                } else if choose_mat < 0.95 {
+                    let albedo = Color::random_in_range(0.5, 1.0);
+                    let fuzz = random_double_in_range(0.0, 0.5);
+                    let sphere_material = Rc::new(Metal { albedo, fuzz });
+                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                } else {
+                    let sphere_material = Rc::new(Dielectric {
+                        refractive_index: 1.5,
+                    });
+                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                }
+            }
+        }
+    }
+
+    let material1 = Rc::new(Dielectric {
         refractive_index: 1.50,
     });
-    let material_bubble = Rc::new(Dielectric {
-        refractive_index: 1.00 / 1.50,
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(0.0, 1.0, 0.0),
+        1.0,
+        material1.clone(),
+    )));
+    let material2 = Rc::new(Lambertian {
+        albedo: Color::new_vec3(0.4, 0.2, 0.1),
     });
-    let material_right = Rc::new(Metal {
-        albedo: Color::new_vec3(0.8, 0.6, 0.2),
-        fuzz: 1.0,
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(-4.0, 1.0, 0.0),
+        1.0,
+        material2.clone(),
+    )));
+    let material3 = Rc::new(Metal {
+        albedo: Color::new_vec3(0.7, 0.6, 0.5),
+        fuzz: 0.0,
     });
-
     world.add(Box::new(Sphere::new(
-        Point3::new_vec3(0.0, -100.5, -1.0),
-        100.0,
-        material_ground.clone(),
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new_vec3(0.0, 0.0, -1.2),
-        0.5,
-        material_center.clone(),
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new_vec3(-1.0, 0.0, -1.0),
-        0.5,
-        material_left.clone(),
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new_vec3(-1.0, 0.0, -1.0),
-        0.4,
-        material_bubble.clone(),
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new_vec3(1.0, 0.0, -1.0),
-        0.5,
-        material_right.clone(),
+        Point3::new_vec3(4.0, 1.0, 0.0),
+        1.0,
+        material3.clone(),
     )));
 
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 400;
-    let samples_per_pixel = 100;
+    let image_width = 1200;
+    let samples_per_pixel = 10;
     let max_depth = 50;
     let vfov = 20.0;
-    let lookfrom = Point3::new_vec3(-2.0, 2.0, 1.0);
-    let lookat = Point3::new_vec3(0.0, 0.0, -1.0);
+    let lookfrom = Point3::new_vec3(13.0, 2.0, 3.0);
+    let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
     let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
-    let defocus_angle = 10.0;
-    let focus_dist = 3.4;
+    let defocus_angle = 0.6;
+    let focus_dist = 10.0;
     let camera = Camera::initialize(
         aspect_ratio,
         image_width,
@@ -90,7 +111,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image22.png");
+    let path = std::path::Path::new("output/book1/image23.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
