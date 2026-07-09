@@ -10,35 +10,59 @@ mod vec3;
 mod vec3color;
 
 use crate::hittable_list::HittableList;
-use crate::rtweekend::{INFINITY, PI};
+use crate::rtweekend::INFINITY;
 use crate::sphere::Sphere;
-use crate::vec3::Point3;
+use crate::vec3::{Point3, Vec3};
 use camera::Camera;
 use std::rc::Rc;
 
-use crate::material::Lambertian;
+use crate::material::{Dielectric, Lambertian, Metal};
 use crate::vec3color::Color;
 use console::style;
 use image::RgbImage;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
-    let r = (PI / 4.0).cos();
-    let material_left = Rc::new(Lambertian {
-        albedo: Color::new_vec3(0.0, 0.0, 1.0),
+    let material_ground = Rc::new(Lambertian {
+        albedo: Color::new_vec3(0.8, 0.8, 0.0),
     });
-    let material_right = Rc::new(Lambertian {
-        albedo: Color::new_vec3(1.0, 0.0, 0.0),
+    let material_center = Rc::new(Lambertian {
+        albedo: Color::new_vec3(0.1, 0.2, 0.5),
+    });
+    let material_left = Rc::new(Dielectric {
+        refractive_index: 1.50,
+    });
+    let material_bubble = Rc::new(Dielectric {
+        refractive_index: 1.00 / 1.50,
+    });
+    let material_right = Rc::new(Metal {
+        albedo: Color::new_vec3(0.8, 0.6, 0.2),
+        fuzz: 1.0,
     });
 
     world.add(Box::new(Sphere::new(
-        Point3::new_vec3(-r, 0.0, -1.0),
-        r,
+        Point3::new_vec3(0.0, -100.5, -1.0),
+        100.0,
+        material_ground.clone(),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(0.0, 0.0, -1.2),
+        0.5,
+        material_center.clone(),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(-1.0, 0.0, -1.0),
+        0.5,
         material_left.clone(),
     )));
     world.add(Box::new(Sphere::new(
-        Point3::new_vec3(r, 0.0, -1.0),
-        r,
+        Point3::new_vec3(-1.0, 0.0, -1.0),
+        0.4,
+        material_bubble.clone(),
+    )));
+    world.add(Box::new(Sphere::new(
+        Point3::new_vec3(1.0, 0.0, -1.0),
+        0.5,
         material_right.clone(),
     )));
 
@@ -47,16 +71,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let samples_per_pixel = 100;
     let max_depth = 50;
     let vfov = 90.0;
+    let lookfrom = Point3::new_vec3(-2.0, 2.0, 1.0);
+    let lookat = Point3::new_vec3(0.0, 0.0, -1.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
     let camera = Camera::initialize(
         aspect_ratio,
         image_width,
         samples_per_pixel,
         max_depth,
         vfov,
+        lookfrom,
+        lookat,
+        vup,
     );
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image19.png");
+    let path = std::path::Path::new("output/book1/image20.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

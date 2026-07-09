@@ -3,7 +3,7 @@ use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
-use crate::vec3::{Point3, Vec3, unit_vector};
+use crate::vec3::{Point3, Vec3, cross, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
 
@@ -15,12 +15,18 @@ pub struct Camera {
     max_depth: u32,
     // albedo: f64, //反射率
     vfov: f64,
+    lookfrom: Point3,
+    lookat: Point3,
+    vup: Vec3,
     image_height: u32,
     pixel_samples_scale: f64,
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_u: Vec3,
     pixel_delta_v: Vec3,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
 }
 
 impl Camera {
@@ -49,34 +55,41 @@ impl Camera {
         }
         img
     }
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         aspect_ratio: f64,
         image_width: u32,
         samples_per_pixel: u32,
         max_depth: u32,
         vfov: f64,
+        lookfrom: Point3,
+        lookat: Point3,
+        vup: Vec3,
     ) -> Self {
         let image_height = (image_width as f64 / aspect_ratio) as u32;
         let image_height = if image_height < 1 { 1 } else { image_height };
 
         let pixel_samples_scale = 1.0 / samples_per_pixel as f64;
 
-        let center = Point3::new_vec3(0.0, 0.0, 0.0);
+        let center = lookfrom;
 
-        let focal_length = 1.0;
+        let focal_length = (lookfrom - lookat).length();
         let theta = degrees_to_radians(vfov);
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h * focal_length;
         let viewport_width = viewport_height * (image_width as f64 / image_height as f64);
 
-        let viewport_u = Vec3::new_vec3(viewport_width, 0.0, 0.0);
-        let viewport_v = Vec3::new_vec3(0.0, -viewport_height, 0.0);
+        let w = unit_vector(lookfrom - lookat);
+        let u = unit_vector(cross(vup, w));
+        let v = cross(w, u);
+
+        let viewport_u = viewport_width * u;
+        let viewport_v = viewport_height * -v;
 
         let pixel_delta_u = viewport_u / image_width as f64;
         let pixel_delta_v = viewport_v / image_height as f64;
 
-        let viewport_upper_left =
-            center - Vec3::new_vec3(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
+        let viewport_upper_left = center - (focal_length * w) - viewport_u / 2.0 - viewport_v / 2.0;
         let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
         Camera {
@@ -85,12 +98,18 @@ impl Camera {
             samples_per_pixel,
             max_depth,
             vfov,
+            lookfrom,
+            lookat,
+            vup,
             image_height,
             pixel_samples_scale,
             center,
             pixel00_loc,
             pixel_delta_u,
             pixel_delta_v,
+            u,
+            v,
+            w,
         }
     }
     fn get_ray(&self, i: u32, j: u32) -> Ray {
