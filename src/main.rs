@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = 400;
     let samples_per_pixel = 100;
     let max_depth = 50;
-    let vfov = 90.0;
+    let vfov = 20.0;
     let lookfrom = Point3::new_vec3(-2.0, 2.0, 1.0);
     let lookat = Point3::new_vec3(0.0, 0.0, -1.0);
     let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image20.png");
+    let path = std::path::Path::new("output/book1/image21.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
