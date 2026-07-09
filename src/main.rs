@@ -45,7 +45,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if choose_mat < 0.8 {
                     let albedo = Color::random() * Color::random();
                     let sphere_material = Rc::new(Lambertian { albedo });
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    let center2 =
+                        center + Vec3::new_vec3(0.0, random_double_in_range(0.0, 0.5), 0.0);
+                    world.add(Box::new(Sphere::new_move(
+                        center,
+                        center2,
+                        0.2,
+                        sphere_material,
+                    )));
                 } else if choose_mat < 0.95 {
                     let albedo = Color::random_in_range(0.5, 1.0);
                     let fuzz = random_double_in_range(0.0, 0.5);
@@ -88,8 +95,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )));
 
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 1200;
-    let samples_per_pixel = 10;
+    let image_width = 400;
+    let samples_per_pixel = 100;
     let max_depth = 50;
     let vfov = 20.0;
     let lookfrom = Point3::new_vec3(13.0, 2.0, 3.0);
@@ -111,7 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image23.png");
+    let path = std::path::Path::new("output/book2/image1.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

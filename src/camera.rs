@@ -135,7 +135,8 @@ impl Camera {
             self.defocus_disk_sample()
         };
         let ray_direction = pixel_sample - ray_origin;
-        Ray::new_ray(ray_origin, ray_direction)
+        let ray_time = random_double();
+        Ray::new_ray(ray_origin, ray_direction, ray_time)
     }
     fn sample_square() -> Vec3 {
         Vec3::new_vec3(random_double() - 0.5, random_double() - 0.5, 0.0)
