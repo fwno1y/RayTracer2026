@@ -13,7 +13,7 @@ pub struct Camera {
     image_width: u32,
     samples_per_pixel: u32,
     max_depth: u32,
-    albedo: f64, //反射率
+    // albedo: f64, //反射率
     image_height: u32,
     pixel_samples_scale: f64,
     center: Point3,
@@ -53,7 +53,6 @@ impl Camera {
         image_width: u32,
         samples_per_pixel: u32,
         max_depth: u32,
-        albedo: f64,
     ) -> Self {
         let image_height = (image_width as f64 / aspect_ratio) as u32;
         let image_height = if image_height < 1 { 1 } else { image_height };
@@ -81,7 +80,6 @@ impl Camera {
             image_width,
             samples_per_pixel,
             max_depth,
-            albedo,
             image_height,
             pixel_samples_scale,
             center,
