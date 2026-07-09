@@ -1,8 +1,8 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
-use crate::rtweekend::INFINITY;
 use crate::rtweekend::random_double;
+use crate::rtweekend::{INFINITY, degrees_to_radians};
 use crate::vec3::{Point3, Vec3, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
@@ -14,6 +14,7 @@ pub struct Camera {
     samples_per_pixel: u32,
     max_depth: u32,
     // albedo: f64, //反射率
+    vfov: f64,
     image_height: u32,
     pixel_samples_scale: f64,
     center: Point3,
@@ -53,6 +54,7 @@ impl Camera {
         image_width: u32,
         samples_per_pixel: u32,
         max_depth: u32,
+        vfov: f64,
     ) -> Self {
         let image_height = (image_width as f64 / aspect_ratio) as u32;
         let image_height = if image_height < 1 { 1 } else { image_height };
@@ -62,7 +64,9 @@ impl Camera {
         let center = Point3::new_vec3(0.0, 0.0, 0.0);
 
         let focal_length = 1.0;
-        let viewport_height = 2.0;
+        let theta = degrees_to_radians(vfov);
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h * focal_length;
         let viewport_width = viewport_height * (image_width as f64 / image_height as f64);
 
         let viewport_u = Vec3::new_vec3(viewport_width, 0.0, 0.0);
@@ -80,6 +84,7 @@ impl Camera {
             image_width,
             samples_per_pixel,
             max_depth,
+            vfov,
             image_height,
             pixel_samples_scale,
             center,
