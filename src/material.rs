@@ -1,6 +1,6 @@
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
-use crate::vec3::{dot, random_unit_vector, reflect, unit_vector};
+use crate::vec3::{dot, random_unit_vector, reflect, refract, unit_vector};
 use crate::vec3color::Color;
 
 #[allow(dead_code)]
@@ -54,5 +54,33 @@ impl Material for Metal {
         } else {
             None
         }
+    }
+}
+
+pub struct Dielectric {
+    pub refractive_index: f64,
+}
+
+impl Dielectric {
+    #[allow(dead_code)]
+    pub fn new(refraction_index: f64) -> Self {
+        Dielectric {
+            refractive_index: refraction_index,
+        }
+    }
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        let attenuation = Color::new_vec3(1.0, 1.0, 1.0);
+        let ri = if rec.front_face {
+            1.0 / self.refractive_index
+        } else {
+            self.refractive_index
+        };
+        let unit_direction = unit_vector(r_in.direction());
+        let refracted = refract(unit_direction, rec.normal, ri);
+        let scattered = Ray::new_ray(rec.p, refracted);
+        Some((attenuation, scattered))
     }
 }
