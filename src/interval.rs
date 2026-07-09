@@ -7,13 +7,13 @@ impl Interval {
     pub fn new(min: f64, max: f64) -> Interval {
         Interval { min: min, max: max }
     }
-    fn size(&self) -> f64 {
+    pub fn size(&self) -> f64 {
         self.max - self.min
     }
-    fn contains(&self, x: f64) -> bool {
+    pub fn contains(&self, x: f64) -> bool {
         self.min <= x && x <= self.max
     }
-    fn surrounds(&self, x: f64) -> bool {
+    pub fn surrounds(&self, x: f64) -> bool {
         self.min < x && x < self.max
     }
     pub const EMPTY: Self = Interval {

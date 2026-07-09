@@ -6,6 +6,7 @@ mod sphere;
 mod vec3;
 mod vec3color;
 mod interval;
+mod camera;
 
 use crate::hittable::{HitRecord, Hittable};
 use crate::hittable_list::HittableList;
@@ -17,7 +18,7 @@ use vec3color::Color;
 
 fn ray_color(r: &Ray, world: &dyn Hittable) -> Color {
     let mut rec = HitRecord::default();
-    if world.hit(r, 0.0, INFINITY, &mut rec) {
+    if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
         return 0.5 * (rec.normal + Color::new_vec3(1.0, 1.0, 1.0));
     }
     let unit_direction = unit_vector(r.direction());
@@ -28,6 +29,7 @@ fn ray_color(r: &Ray, world: &dyn Hittable) -> Color {
 use console::style;
 use image::{ImageBuffer, RgbImage};
 use indicatif::ProgressBar;
+use crate::interval::Interval;
 
 fn main() {
     let path = std::path::Path::new("output/book1/image5.png");
