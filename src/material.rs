@@ -1,6 +1,6 @@
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
-use crate::vec3::{dot, random_unit_vector, reflect, refract, unit_vector};
+use crate::vec3::{Vec3, dot, random_unit_vector, reflect, refract, unit_vector};
 use crate::vec3color::Color;
 
 #[allow(dead_code)]
@@ -79,8 +79,17 @@ impl Material for Dielectric {
             self.refractive_index
         };
         let unit_direction = unit_vector(r_in.direction());
-        let refracted = refract(unit_direction, rec.normal, ri);
-        let scattered = Ray::new_ray(rec.p, refracted);
+        let cos_theta = dot(-unit_direction, rec.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+        let cannot_refract = ri * sin_theta > 1.0;
+        #[allow(unused_assignments)]
+        let mut direction = Vec3::new_vec3(0.0, 0.0, 0.0);
+        if cannot_refract {
+            direction = reflect(unit_direction, rec.normal);
+        } else {
+            direction = refract(unit_direction, rec.normal, ri);
+        }
+        let scattered = Ray::new_ray(rec.p, direction);
         Some((attenuation, scattered))
     }
 }

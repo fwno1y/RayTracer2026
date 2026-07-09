@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         albedo: Color::new_vec3(0.1, 0.2, 0.5),
     });
     let material_left = Rc::new(Dielectric {
-        refractive_index: 1.50,
+        refractive_index: 1.00 / 1.33,
     });
     let material_right = Rc::new(Metal {
         albedo: Color::new_vec3(0.8, 0.6, 0.2),
@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::initialize(aspect_ratio, image_width, samples_per_pixel, max_depth);
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image15.png");
+    let path = std::path::Path::new("output/book1/image17.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
