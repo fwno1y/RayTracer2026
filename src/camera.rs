@@ -3,7 +3,7 @@ use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::rtweekend::INFINITY;
 use crate::rtweekend::random_double;
-use crate::vec3::{Point3, Vec3, unit_vector};
+use crate::vec3::{Point3, Vec3, random_on_hemisphere, unit_vector};
 use crate::vec3color::Color;
 use image::RgbImage;
 
@@ -33,7 +33,7 @@ impl Camera {
 
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
-                    color += Self::ray_color(&r, world);
+                    color += Self::ray_color(&r, world, 100);
                 }
                 // 平均颜色
                 color *= self.pixel_samples_scale;
@@ -92,10 +92,14 @@ impl Camera {
     fn sample_square() -> Vec3 {
         Vec3::new_vec3(random_double() - 0.5, random_double() - 0.5, 0.0)
     }
-    fn ray_color(r: &Ray, world: &dyn Hittable) -> Color {
+    fn ray_color(r: &Ray, world: &dyn Hittable, depth: u32) -> Color {
+        if depth == 0 {
+            return Color::new_vec3(0.0, 0.0, 0.0);
+        }
         let mut rec = HitRecord::default();
         if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
-            return 0.5 * (rec.normal + Color::new_vec3(1.0, 1.0, 1.0));
+            let direction = random_on_hemisphere(rec.normal);
+            return 0.5 * Self::ray_color(&Ray::new_ray(rec.p, direction), world, depth - 1);
         }
         let unit_direction = unit_vector(r.direction());
         let a = 0.5 * (unit_direction.y() + 1.0);
