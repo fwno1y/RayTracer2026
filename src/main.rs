@@ -32,9 +32,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let material_left = Rc::new(Metal {
         albedo: Color::new_vec3(0.8, 0.8, 0.8),
+        fuzz: 0.3,
     });
     let material_right = Rc::new(Metal {
         albedo: Color::new_vec3(0.8, 0.6, 0.2),
+        fuzz: 1.0,
     });
 
     world.add(Box::new(Sphere::new(
@@ -65,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let camera = Camera::initialize(aspect_ratio, image_width, samples_per_pixel, max_depth);
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book1/image13.png");
+    let path = std::path::Path::new("output/book1/image14.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

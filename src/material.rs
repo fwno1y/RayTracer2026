@@ -1,6 +1,6 @@
 use crate::hittable::HitRecord;
 use crate::ray::Ray;
-use crate::vec3::{random_unit_vector, reflect};
+use crate::vec3::{dot, random_unit_vector, reflect, unit_vector};
 use crate::vec3color::Color;
 
 #[allow(dead_code)]
@@ -33,19 +33,26 @@ impl Material for Lambertian {
 
 pub struct Metal {
     pub albedo: Color,
+    pub fuzz: f64,
 }
 impl Metal {
     #[allow(dead_code)]
-    pub fn new(albedo: Color) -> Self {
-        Metal { albedo }
+    pub fn new(albedo: Color, fuzz: f64) -> Self {
+        let fuzz = if fuzz < 1.0 { fuzz } else { 1.0 };
+        Metal { albedo, fuzz }
     }
 }
 
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
-        let reflected = reflect(r_in.direction(), rec.normal);
+        let mut reflected = reflect(r_in.direction(), rec.normal);
+        reflected = unit_vector(reflected) + (self.fuzz * random_unit_vector());
         let scattered = Ray::new_ray(rec.p, reflected);
         let attenuation = self.albedo;
-        Some((attenuation, scattered))
+        if dot(scattered.direction(), rec.normal) > 0.0 {
+            Some((attenuation, scattered))
+        } else {
+            None
+        }
     }
 }
