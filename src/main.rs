@@ -11,6 +11,7 @@ mod sphere;
 mod texture;
 mod vec3;
 mod vec3color;
+mod rtw_stb_image;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
