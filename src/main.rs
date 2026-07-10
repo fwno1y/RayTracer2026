@@ -6,12 +6,12 @@ mod hittable_list;
 mod interval;
 mod material;
 mod ray;
+mod rtw_stb_image;
 mod rtweekend;
 mod sphere;
 mod texture;
 mod vec3;
 mod vec3color;
-mod rtw_stb_image;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
@@ -22,7 +22,7 @@ use std::rc::Rc;
 
 use crate::bvh::BvhNode;
 use crate::material::{Dielectric, Lambertian, Metal};
-use crate::texture::CheckerTexture;
+use crate::texture::{CheckerTexture, ImageTexture};
 use crate::vec3color::Color;
 use console::style;
 use image::RgbImage;
@@ -195,11 +195,54 @@ fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+fn earth() -> Result<(), Box<dyn std::error::Error>> {
+    let earth_texture = Rc::new(ImageTexture::new("earthmap.jpg"));
+    let earth_surface = Rc::new(Lambertian::new(earth_texture.clone()));
+    let globe = Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        2.0,
+        earth_surface.clone(),
+    ));
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width = 400;
+    let samples_per_pixel = 100;
+    let max_depth = 50;
+    let vfov = 20.0;
+    let lookfrom = Point3::new_vec3(0.0, 0.0, 12.0);
+    let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let mut world = HittableList::new();
+    world.add(globe);
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image5.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
 
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
 fn main() {
-    match 2 {
+    match 3 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
+        3 => earth().unwrap(),
         _ => {}
     }
 }

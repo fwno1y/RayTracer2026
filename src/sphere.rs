@@ -3,9 +3,9 @@ use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::material::Material;
 use crate::ray::Ray;
+use crate::rtweekend::PI;
 use crate::vec3::{Point3, Vec3, dot};
 use std::rc::Rc;
-use crate::rtweekend::PI;
 
 pub struct Sphere {
     center: Ray,
@@ -73,7 +73,11 @@ impl Hittable for Sphere {
         rec.p = r.at(rec.t);
         let outward_normal = (rec.p - current_center) / self.radius;
         rec.set_face_normal(r, outward_normal);
-        let (u,v) = Self::get_sphere_uv(&Point3::new_vec3(outward_normal.x(), outward_normal.y(), outward_normal.z()));
+        let (u, v) = Self::get_sphere_uv(&Point3::new_vec3(
+            outward_normal.x(),
+            outward_normal.y(),
+            outward_normal.z(),
+        ));
         rec.u = u;
         rec.v = v;
         rec.mat = Some(self.mat.clone());

@@ -1,7 +1,6 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
-
 pub struct RtwImage {
     image_width: u32,
     image_height: u32,
@@ -67,19 +66,27 @@ impl RtwImage {
             Err(_) => false,
         }
     }
-    pub fn width(&self) -> u32 {
-        if self.data.is_empty() { 0 } else { self.image_width }
+    pub fn width(&self) -> i32 {
+        if self.data.is_empty() {
+            0
+        } else {
+            self.image_width as i32
+        }
     }
-    pub fn height(&self) -> u32 {
-        if self.data.is_empty() { 0 } else { self.image_height }
+    pub fn height(&self) -> i32 {
+        if self.data.is_empty() {
+            0
+        } else {
+            self.image_height as i32
+        }
     }
     pub fn pixel_data(&self, x: u32, y: u32) -> &[u8] {
         const MAGENTA: [u8; 3] = [255, 0, 255];
         if self.data.is_empty() {
-            return &MAGENTA
+            return &MAGENTA;
         }
-        let x = Self::clamp(&self, x, 0, self.image_width);
-        let y = Self::clamp(&self, y, 0, self.image_height);
+        let x = Self::clamp(self, x, 0, self.image_width);
+        let y = Self::clamp(self, y, 0, self.image_height);
         let idx = (y * self.image_width + x) as usize * self.bytes_per_pixel as usize;
         &self.data[idx..idx + self.bytes_per_pixel as usize]
     }
@@ -92,6 +99,7 @@ impl RtwImage {
         }
         high - 1
     }
+    #[allow(dead_code)]
     fn float_to_byte(value: f32) -> u8 {
         if value <= 0.0 {
             0
@@ -101,5 +109,4 @@ impl RtwImage {
             (256.0 * value) as u8
         }
     }
-
 }

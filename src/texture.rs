@@ -1,8 +1,8 @@
 use crate::Color;
-use crate::vec3::Point3;
-use std::rc::Rc;
 use crate::interval::Interval;
 use crate::rtw_stb_image::RtwImage;
+use crate::vec3::Point3;
+use std::rc::Rc;
 
 pub struct SolidColor {
     albedo: Color,
@@ -84,7 +84,7 @@ impl ImageTexture {
 }
 
 impl Texture for ImageTexture {
-    fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+    fn value(&self, u: f64, v: f64, _p: &Point3) -> Color {
         if self.image.height() <= 0 {
             return Color::new_vec3(0.0, 1.0, 1.0);
         }
@@ -94,6 +94,10 @@ impl Texture for ImageTexture {
         let j = (v * (self.image.height() as f64)) as u32;
         let pixel = self.image.pixel_data(i, j);
         let color_scale = 1.0 / 255.0;
-        Color::new_vec3(color_scale * pixel[0] as f64, color_scale * pixel[1] as f64, color_scale * pixel[2] as f64)
+        Color::new_vec3(
+            color_scale * pixel[0] as f64,
+            color_scale * pixel[1] as f64,
+            color_scale * pixel[2] as f64,
+        )
     }
 }
