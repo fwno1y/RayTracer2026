@@ -26,7 +26,7 @@ use crate::vec3color::Color;
 use console::style;
 use image::RgbImage;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn bouncing_spheres() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
 
     let checker = Rc::new(CheckerTexture::from_color(
@@ -137,4 +137,68 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         style(path.to_str().unwrap()).yellow()
     );
     Ok(())
+}
+
+fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = HittableList::new();
+    let checker = Rc::new(CheckerTexture::from_color(
+        0.32,
+        Color::new_vec3(0.2, 0.3, 0.1),
+        Color::new_vec3(0.9, 0.9, 0.9),
+    ));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, -10.0, 0.0),
+        10.0,
+        Rc::new(Lambertian::new(checker)),
+    )));
+    let checker = Rc::new(CheckerTexture::from_color(
+        0.32,
+        Color::new_vec3(0.2, 0.3, 0.1),
+        Color::new_vec3(0.9, 0.9, 0.9),
+    ));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, 10.0, 0.0),
+        10.0,
+        Rc::new(Lambertian::new(checker)),
+    )));
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width = 400;
+    let samples_per_pixel = 100;
+    let max_depth = 50;
+    let vfov = 20.0;
+    let lookfrom = Point3::new_vec3(13.0, 2.0, 3.0);
+    let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.6;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image3.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
+
+fn main() {
+    match 2 {
+        1 => bouncing_spheres().unwrap(),
+        2 => checkered_spheres().unwrap(),
+        _ => {}
+    }
 }
