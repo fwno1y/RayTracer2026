@@ -4,18 +4,22 @@ use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::{Point3, Vec3, dot};
 use std::rc::Rc;
+use crate::aabb::Aabb;
 
 pub struct Sphere {
     center: Ray,
     radius: f64,
     mat: Rc<dyn Material>,
+    bbox: Aabb,
 }
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, material: Rc<dyn Material>) -> Self {
+    pub fn new(static_center: Point3, radius: f64, material: Rc<dyn Material>) -> Self {
+        let rvec = Vec3::new_vec3(radius, radius, radius);
         Sphere {
-            center: Ray::new_ray(center, Vec3::new_vec3(0.0, 0.0, 0.0), 0.0),
+            center: Ray::new_ray(static_center, Vec3::new_vec3(0.0, 0.0, 0.0), 0.0),
             radius: radius.max(0.0),
             mat: material,
+            bbox: Aabb::aabb(static_center - rvec, static_center + rvec),
         }
     }
     pub fn new_move(
@@ -24,10 +28,15 @@ impl Sphere {
         radius: f64,
         material: Rc<dyn Material>,
     ) -> Self {
+        let center = Ray::new_ray(center1, center2 - center1, 0.0);
+        let rvec = Vec3::new_vec3(radius, radius, radius);
+        let box1 = Aabb::aabb(center.at(0.0) - rvec, center.at(0.0) + rvec);
+        let box2 = Aabb::aabb(center.at(1.0) - rvec, center.at(1.0) + rvec);
         Sphere {
-            center: Ray::new_ray(center1, center2 - center1, 0.0),
+            center,
             radius: radius.max(0.0),
             mat: material,
+            bbox: Aabb::aabb_merge(box1, box2),
         }
     }
 }
@@ -58,5 +67,8 @@ impl Hittable for Sphere {
         rec.set_face_normal(r, outward_normal);
         rec.mat = Some(self.mat.clone());
         true
+    }
+    fn bounding_box(&self) -> Aabb {
+        self.bbox
     }
 }

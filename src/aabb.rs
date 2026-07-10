@@ -2,6 +2,7 @@ use crate::interval::Interval;
 use crate::ray::Ray;
 use crate::vec3::Point3;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Aabb {
     pub x: Interval,
     pub y: Interval,
@@ -9,6 +10,7 @@ pub struct Aabb {
 }
 
 impl Aabb {
+    #[allow(dead_code)]
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
         Self { x, y, z }
     }
@@ -21,6 +23,13 @@ impl Aabb {
         let z = if a[2] <= b[2] { Interval::new(a[2], b[2]) } else { Interval::new(b[2], a[2]) };
         Self { x, y, z }
     }
+    pub fn aabb_merge(box0: Aabb, box1: Aabb) -> Self {
+        Self {
+            x: Interval::interval(box0.x, box1.x),
+            y: Interval::interval(box0.y, box1.y),
+            z: Interval::interval(box0.z, box1.z),
+        }
+    }
     pub fn axis_interval(&self, n: u32) -> &Interval {
         match n {
             0 => &self.x,
@@ -29,12 +38,13 @@ impl Aabb {
             _ => panic!("invalid number of axis"),
         }
     }
+    #[warn(unused_variables)]
     pub fn hit(&self, r: &Ray, mut ray_t: Interval) -> bool {
         let ray_orig = r.origin();
         let ray_dir = r.direction();
         for axis in 0..3 {
             let ax = self.axis_interval(axis);
-            let adinv = 1.0 / ray_orig[axis as usize];
+            let adinv = 1.0 / ray_dir[axis as usize];
             let t0 = (ax.min - ray_orig[axis as usize]) * adinv;
             let t1 = (ax.max - ray_orig[axis as usize]) * adinv;
             if t0 < t1 {
@@ -57,6 +67,21 @@ impl Aabb {
             }
         }
         true
+    }
+    pub fn longest_axis(&self) -> u32 {
+        if self.x.size() > self.y.size() {
+            if self.x.size() > self.z.size() {
+                0
+            } else {
+                2
+            }
+        } else {
+            if self.y.size() > self.z.size() {
+                1
+            } else {
+                2
+            }
+        }
     }
 }
 

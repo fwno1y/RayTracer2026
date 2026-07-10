@@ -9,6 +9,7 @@ mod sphere;
 mod vec3;
 mod vec3color;
 mod aabb;
+mod bvh;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
@@ -21,6 +22,7 @@ use crate::material::{Dielectric, Lambertian, Metal};
 use crate::vec3color::Color;
 use console::style;
 use image::RgbImage;
+use crate::bvh::BvhNode;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
@@ -28,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ground_material = Rc::new(Lambertian {
         albedo: Color::new_vec3(0.5, 0.5, 0.5),
     });
-    world.add(Box::new(Sphere::new(
+    world.add(Rc::new(Sphere::new(
         Point3::new_vec3(0.0, -1000.0, 0.0),
         1000.0,
         ground_material,
@@ -48,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let sphere_material = Rc::new(Lambertian { albedo });
                     let center2 =
                         center + Vec3::new_vec3(0.0, random_double_in_range(0.0, 0.5), 0.0);
-                    world.add(Box::new(Sphere::new_move(
+                    world.add(Rc::new(Sphere::new_move(
                         center,
                         center2,
                         0.2,
@@ -58,12 +60,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let albedo = Color::random_in_range(0.5, 1.0);
                     let fuzz = random_double_in_range(0.0, 0.5);
                     let sphere_material = Rc::new(Metal { albedo, fuzz });
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    world.add(Rc::new(Sphere::new(center, 0.2, sphere_material)));
                 } else {
                     let sphere_material = Rc::new(Dielectric {
                         refractive_index: 1.5,
                     });
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    world.add(Rc::new(Sphere::new(center, 0.2, sphere_material)));
                 }
             }
         }
@@ -72,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let material1 = Rc::new(Dielectric {
         refractive_index: 1.50,
     });
-    world.add(Box::new(Sphere::new(
+    world.add(Rc::new(Sphere::new(
         Point3::new_vec3(0.0, 1.0, 0.0),
         1.0,
         material1.clone(),
@@ -80,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let material2 = Rc::new(Lambertian {
         albedo: Color::new_vec3(0.4, 0.2, 0.1),
     });
-    world.add(Box::new(Sphere::new(
+    world.add(Rc::new(Sphere::new(
         Point3::new_vec3(-4.0, 1.0, 0.0),
         1.0,
         material2.clone(),
@@ -89,11 +91,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         albedo: Color::new_vec3(0.7, 0.6, 0.5),
         fuzz: 0.0,
     });
-    world.add(Box::new(Sphere::new(
+    world.add(Rc::new(Sphere::new(
         Point3::new_vec3(4.0, 1.0, 0.0),
         1.0,
         material3.clone(),
     )));
+
+    let bvh_root = BvhNode::from_list(world);
+    let mut new_world = HittableList::new();
+    new_world.add(bvh_root);
+    world = new_world;
 
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
@@ -119,7 +126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let img: RgbImage = camera.render(&world);
 
-    let path = std::path::Path::new("output/book2/image1.png");
+    let path = std::path::Path::new("output/book2/image2.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

@@ -1,10 +1,16 @@
 use crate::INFINITY;
+#[derive(Debug, Copy, Clone)]
 pub struct Interval {
     pub min: f64,
     pub max: f64,
 }
 impl Interval {
     pub fn new(min: f64, max: f64) -> Interval {
+        Interval { min, max }
+    }
+    pub fn interval(a: Interval, b: Interval) -> Interval {
+        let min = if a.min <= b.min { a.min } else { b.min };
+        let max = if a.max >= b.max { a.max } else { b.max };
         Interval { min, max }
     }
     #[allow(dead_code)]
