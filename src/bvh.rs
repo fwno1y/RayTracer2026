@@ -1,10 +1,10 @@
-use std::rc::Rc;
 use crate::aabb::Aabb;
 use crate::hittable::{HitRecord, Hittable};
 use crate::hittable_list::HittableList;
 use crate::interval::Interval;
 use crate::ray::Ray;
 use std::cmp::Ordering;
+use std::rc::Rc;
 
 pub struct BvhNode {
     left: Rc<dyn Hittable>,
@@ -21,14 +21,18 @@ impl BvhNode {
         let len = objects.len();
         Self::build_recursive(&mut objects, 0, len)
     }
-    fn build_recursive(objects: &mut [Rc<dyn Hittable>], start: usize, end: usize) -> Rc<dyn Hittable> {
+    fn build_recursive(
+        objects: &mut [Rc<dyn Hittable>],
+        start: usize,
+        end: usize,
+    ) -> Rc<dyn Hittable> {
         let object_span = end - start;
         if object_span == 1 {
             return Rc::clone(&objects[start]);
         }
         let mut bbox = Aabb::empty();
-        for object_index in start..end {
-            bbox = Aabb::aabb_merge(bbox, objects[object_index].bounding_box());
+        for obj in &objects[start..end] {
+            bbox = Aabb::aabb_merge(bbox, obj.bounding_box());
         }
         let axis = bbox.longest_axis() as usize;
         let comparator: fn(&Rc<dyn Hittable>, &Rc<dyn Hittable>) -> Ordering = match axis {
@@ -52,8 +56,7 @@ impl BvhNode {
             bbox,
         })
     }
-    pub fn box_compare(a: &Rc<dyn Hittable>, b: &Rc<dyn Hittable>, axis_index: u32) ->Ordering
-    {
+    pub fn box_compare(a: &Rc<dyn Hittable>, b: &Rc<dyn Hittable>, axis_index: u32) -> Ordering {
         let abox = a.bounding_box();
         let bbox = b.bounding_box();
         let a_axis_interval = abox.axis_interval(axis_index);

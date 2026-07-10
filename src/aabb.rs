@@ -17,17 +17,29 @@ impl Aabb {
     pub fn empty() -> Self {
         Self::default()
     }
-    pub fn aabb(a: Point3, b: Point3) -> Self {
-        let x = if a[0] <= b[0] { Interval::new(a[0], b[0]) } else { Interval::new(b[0], a[0]) };
-        let y = if a[1] <= b[1] { Interval::new(a[1], b[1]) } else { Interval::new(b[1], a[1]) };
-        let z = if a[2] <= b[2] { Interval::new(a[2], b[2]) } else { Interval::new(b[2], a[2]) };
+    pub fn from_points(a: Point3, b: Point3) -> Self {
+        let x = if a[0] <= b[0] {
+            Interval::new(a[0], b[0])
+        } else {
+            Interval::new(b[0], a[0])
+        };
+        let y = if a[1] <= b[1] {
+            Interval::new(a[1], b[1])
+        } else {
+            Interval::new(b[1], a[1])
+        };
+        let z = if a[2] <= b[2] {
+            Interval::new(a[2], b[2])
+        } else {
+            Interval::new(b[2], a[2])
+        };
         Self { x, y, z }
     }
     pub fn aabb_merge(box0: Aabb, box1: Aabb) -> Self {
         Self {
-            x: Interval::interval(box0.x, box1.x),
-            y: Interval::interval(box0.y, box1.y),
-            z: Interval::interval(box0.z, box1.z),
+            x: Interval::merge(box0.x, box1.x),
+            y: Interval::merge(box0.y, box1.y),
+            z: Interval::merge(box0.z, box1.z),
         }
     }
     pub fn axis_interval(&self, n: u32) -> &Interval {
@@ -70,17 +82,11 @@ impl Aabb {
     }
     pub fn longest_axis(&self) -> u32 {
         if self.x.size() > self.y.size() {
-            if self.x.size() > self.z.size() {
-                0
-            } else {
-                2
-            }
+            if self.x.size() > self.z.size() { 0 } else { 2 }
+        } else if self.y.size() > self.z.size() {
+            1
         } else {
-            if self.y.size() > self.z.size() {
-                1
-            } else {
-                2
-            }
+            2
         }
     }
 }

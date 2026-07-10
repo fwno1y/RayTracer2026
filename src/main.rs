@@ -1,3 +1,5 @@
+mod aabb;
+mod bvh;
 mod camera;
 mod hittable;
 mod hittable_list;
@@ -6,11 +8,9 @@ mod material;
 mod ray;
 mod rtweekend;
 mod sphere;
+mod texture;
 mod vec3;
 mod vec3color;
-mod aabb;
-mod bvh;
-mod texture;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
@@ -19,22 +19,25 @@ use crate::vec3::{Point3, Vec3};
 use camera::Camera;
 use std::rc::Rc;
 
+use crate::bvh::BvhNode;
 use crate::material::{Dielectric, Lambertian, Metal};
+use crate::texture::CheckerTexture;
 use crate::vec3color::Color;
 use console::style;
 use image::RgbImage;
-use crate::bvh::BvhNode;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
 
-    let ground_material = Rc::new(Lambertian {
-        albedo: Color::new_vec3(0.5, 0.5, 0.5),
-    });
+    let checker = Rc::new(CheckerTexture::from_color(
+        0.32,
+        Color::new_vec3(0.2, 0.3, 0.1),
+        Color::new_vec3(0.9, 0.9, 0.9),
+    ));
     world.add(Rc::new(Sphere::new(
         Point3::new_vec3(0.0, -1000.0, 0.0),
         1000.0,
-        ground_material,
+        Rc::new(Lambertian::new(checker)),
     )));
 
     for a in -11..11 {
@@ -48,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if (center - Point3::new_vec3(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     let albedo = Color::random() * Color::random();
-                    let sphere_material = Rc::new(Lambertian { albedo });
+                    let sphere_material = Rc::new(Lambertian::from_color(albedo));
                     let center2 =
                         center + Vec3::new_vec3(0.0, random_double_in_range(0.0, 0.5), 0.0);
                     world.add(Rc::new(Sphere::new_move(
@@ -80,9 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         1.0,
         material1.clone(),
     )));
-    let material2 = Rc::new(Lambertian {
-        albedo: Color::new_vec3(0.4, 0.2, 0.1),
-    });
+    let material2 = Rc::new(Lambertian::from_color(Color::new_vec3(0.4, 0.2, 0.1)));
     world.add(Rc::new(Sphere::new(
         Point3::new_vec3(-4.0, 1.0, 0.0),
         1.0,

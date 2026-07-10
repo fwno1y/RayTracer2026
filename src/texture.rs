@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use crate::Color;
-use crate::vec3::{Point3};
+use crate::vec3::Point3;
+use std::rc::Rc;
 
 pub struct SolidColor {
     albedo: Color,
@@ -17,7 +17,7 @@ impl SolidColor {
         Self { albedo }
     }
     #[allow(dead_code)]
-    pub fn solid_color(red: f64, green: f64, blue: f64) -> Self {
+    pub fn from_rgb(red: f64, green: f64, blue: f64) -> Self {
         Self {
             albedo: Color::new_vec3(red, green, blue),
         }
@@ -25,7 +25,7 @@ impl SolidColor {
 }
 
 impl Texture for SolidColor {
-    fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+    fn value(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
         self.albedo
     }
 }
@@ -45,7 +45,11 @@ impl CheckerTexture {
         }
     }
     pub fn from_color(scale: f64, c1: Color, c2: Color) -> Self {
-        Self::new(scale, Rc::new(SolidColor::new(c1)), Rc::new(SolidColor::new(c2)))
+        Self::new(
+            scale,
+            Rc::new(SolidColor::new(c1)),
+            Rc::new(SolidColor::new(c2)),
+        )
     }
 }
 
