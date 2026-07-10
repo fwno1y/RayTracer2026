@@ -28,6 +28,11 @@ impl Interval {
         x
     }
     #[allow(dead_code)]
+    pub fn expand(&self, delta: f64) -> Interval {
+        let padding = delta / 2.0;
+        Interval::new(self.min - padding, self.max + padding)
+    }
+    #[allow(dead_code)]
     pub const EMPTY: Self = Interval {
         min: INFINITY,
         max: -INFINITY,

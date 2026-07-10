@@ -8,6 +8,7 @@ mod rtweekend;
 mod sphere;
 mod vec3;
 mod vec3color;
+mod aabb;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
