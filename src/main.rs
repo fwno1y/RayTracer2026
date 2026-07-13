@@ -241,7 +241,7 @@ fn earth() -> Result<(), Box<dyn std::error::Error>> {
 }
 fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
-    let pertext = Rc::new(NoiseTexture::new());
+    let pertext = Rc::new(NoiseTexture::new(4.0));
     world.add(Rc::new(Sphere::new(
         Point3::new_vec3(0.0, -1000.0, 0.0),
         1000.0,
@@ -275,7 +275,7 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book2/image11.png");
+    let path = std::path::Path::new("output/book2/image12.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

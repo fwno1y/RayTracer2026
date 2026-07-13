@@ -3,6 +3,7 @@ use crate::interval::Interval;
 use crate::perlin::Perlin;
 use crate::rtw_stb_image::RtwImage;
 use crate::vec3::Point3;
+use std::ops::Mul;
 use std::rc::Rc;
 
 pub struct SolidColor {
@@ -105,18 +106,20 @@ impl Texture for ImageTexture {
 
 pub struct NoiseTexture {
     noise: Perlin,
+    scale: f64,
 }
 
 impl NoiseTexture {
-    pub fn new() -> Self {
+    pub fn new(scale: f64) -> Self {
         Self {
             noise: Perlin::new(),
+            scale,
         }
     }
 }
 
 impl Texture for NoiseTexture {
     fn value(&self, _u: f64, _v: f64, p: &Point3) -> Color {
-        Color::new_vec3(1.0, 1.0, 1.0) * self.noise.noise(p)
+        Color::new_vec3(1.0, 1.0, 1.0) * self.noise.noise(&p.mul(self.scale))
     }
 }
