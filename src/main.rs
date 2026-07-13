@@ -275,7 +275,7 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book2/image10.png");
+    let path = std::path::Path::new("output/book2/image11.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
