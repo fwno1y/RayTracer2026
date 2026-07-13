@@ -12,7 +12,9 @@ pub struct Aabb {
 impl Aabb {
     #[allow(dead_code)]
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-        Self { x, y, z }
+        let mut aabb = Self { x, y, z };
+        aabb.pad_to_minimums();
+        aabb
     }
     pub fn empty() -> Self {
         Self::default()
@@ -87,6 +89,14 @@ impl Aabb {
             1
         } else {
             2
+        }
+    }
+    fn pad_to_minimums(&mut self) {
+        let delta = 0.0001;
+        if self.x.size() < delta {
+            self.x = self.x.expand(delta);
+            self.y = self.y.expand(delta);
+            self.z = self.z.expand(delta);
         }
     }
 }

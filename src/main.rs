@@ -6,6 +6,7 @@ mod hittable_list;
 mod interval;
 mod material;
 mod perlin;
+mod quad;
 mod ray;
 mod rtw_stb_image;
 mod rtweekend;
@@ -23,6 +24,7 @@ use std::rc::Rc;
 
 use crate::bvh::BvhNode;
 use crate::material::{Dielectric, Lambertian, Metal};
+use crate::quad::Quad;
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use crate::vec3color::Color;
 use console::style;
@@ -285,12 +287,84 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+fn quads() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = HittableList::new();
+    let left_red = Rc::new(Lambertian::from_color(Color::new_vec3(1.0, 0.2, 0.2)));
+    let back_green = Rc::new(Lambertian::from_color(Color::new_vec3(0.2, 1.0, 0.2)));
+    let right_blue = Rc::new(Lambertian::from_color(Color::new_vec3(0.2, 0.2, 1.0)));
+    let upper_orange = Rc::new(Lambertian::from_color(Color::new_vec3(1.0, 0.5, 0.0)));
+    let lower_teal = Rc::new(Lambertian::from_color(Color::new_vec3(0.2, 0.8, 0.8)));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(-3.0, -2.0, 5.0),
+        Vec3::new_vec3(0.0, 0.0, -4.0),
+        Vec3::new_vec3(0.0, 4.0, 0.0),
+        left_red,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(-2.0, -2.0, 0.0),
+        Vec3::new_vec3(4.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 4.0, 0.0),
+        back_green,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(3.0, -2.0, 1.0),
+        Vec3::new_vec3(0.0, 0.0, 4.0),
+        Vec3::new_vec3(0.0, 4.0, 0.0),
+        right_blue,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(-2.0, 3.0, 1.0),
+        Vec3::new_vec3(4.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 4.0),
+        upper_orange,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(-2.0, -3.0, 5.0),
+        Vec3::new_vec3(4.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -4.0),
+        lower_teal,
+    )));
+
+    let aspect_ratio = 1.0;
+    let image_width = 400;
+    let samples_per_pixel = 100;
+    let max_depth = 50;
+    let vfov = 80.0;
+    let lookfrom = Point3::new_vec3(0.0, 0.0, 9.0);
+    let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image16.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
 fn main() {
-    match 4 {
+    match 5 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
         4 => perlin_spheres().unwrap(),
+        5 => quads().unwrap(),
         _ => {}
     }
 }
