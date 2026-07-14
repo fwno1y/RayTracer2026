@@ -2,12 +2,15 @@ use crate::hittable::HitRecord;
 use crate::ray::Ray;
 use crate::rtweekend::random_double;
 use crate::texture::{SolidColor, Texture};
-use crate::vec3::{Vec3, dot, random_unit_vector, reflect, refract, unit_vector};
+use crate::vec3::{Point3, Vec3, dot, random_unit_vector, reflect, refract, unit_vector};
 use crate::vec3color::Color;
 use std::rc::Rc;
 
 #[allow(dead_code)]
 pub trait Material {
+    fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
+        Color::new_vec3(0.0, 0.0, 0.0)
+    }
     fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray)> {
         None
     }
@@ -105,5 +108,29 @@ impl Material for Dielectric {
         }
         let scattered = Ray::new_ray(rec.p, direction, r_in.time());
         Some((attenuation, scattered))
+    }
+}
+
+pub struct DiffuseLight {
+    tex: Rc<dyn Texture>,
+}
+
+impl DiffuseLight {
+    #[allow(dead_code)]
+    pub fn new(tex: Rc<dyn Texture>) -> Self {
+        DiffuseLight { tex }
+    }
+    #[allow(dead_code)]
+    pub fn from_color(emit: Color) -> Self {
+        DiffuseLight {
+            tex: Rc::new(SolidColor::new(emit)),
+        }
+    }
+}
+
+impl Material for DiffuseLight {
+    #[allow(dead_code)]
+    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+        self.tex.value(u, v, p)
     }
 }

@@ -13,6 +13,7 @@ pub struct Camera {
     image_width: u32,
     samples_per_pixel: u32,
     max_depth: u32,
+    background: Color,
     // albedo: f64, //反射率
     vfov: f64,
     lookfrom: Point3,
@@ -65,6 +66,7 @@ impl Camera {
         image_width: u32,
         samples_per_pixel: u32,
         max_depth: u32,
+        background: Color,
         vfov: f64,
         lookfrom: Point3,
         lookat: Point3,
@@ -105,6 +107,7 @@ impl Camera {
             image_width,
             samples_per_pixel,
             max_depth,
+            background,
             vfov,
             lookfrom,
             lookat,
@@ -151,16 +154,19 @@ impl Camera {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
         let mut rec = HitRecord::default();
-        if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            if let Some(mat) = &rec.mat {
-                if let Some((attenuation, scattered)) = mat.scatter(r, &rec) {
-                    return attenuation * self.ray_color(&scattered, depth - 1, world);
-                }
-            }
-            return Color::new_vec3(0.0, 0.0, 0.0);
+        if !world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
+            return self.background;
         }
-        let unit_direction = unit_vector(r.direction());
-        let a = 0.5 * (unit_direction.y() + 1.0);
-        (1.0 - a) * Color::new_vec3(1.0, 1.0, 1.0) + a * Color::new_vec3(0.5, 0.7, 1.0)
+        let mut color_from_emission = Color::new_vec3(0.0, 0.0, 0.0);
+        if let Some(mat) = &rec.mat {
+            color_from_emission = mat.emitted(rec.u, rec.v, &rec.p);
+        }
+        if let Some(mat) = &rec.mat {
+            if let Some((attenuation, scattered)) = mat.scatter(r, &rec) {
+                let color_from_scatter = attenuation * self.ray_color(&scattered, depth - 1, world);
+                return color_from_emission + color_from_scatter;
+            }
+        }
+        color_from_emission
     }
 }

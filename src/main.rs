@@ -23,7 +23,7 @@ use camera::Camera;
 use std::rc::Rc;
 
 use crate::bvh::BvhNode;
-use crate::material::{Dielectric, Lambertian, Metal};
+use crate::material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use crate::quad::Quad;
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use crate::vec3color::Color;
@@ -112,6 +112,7 @@ fn bouncing_spheres() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = 400;
     let samples_per_pixel = 100;
     let max_depth = 50;
+    let background = Color::new_vec3(0.70, 0.80, 1.00);
     let vfov = 20.0;
     let lookfrom = Point3::new_vec3(13.0, 2.0, 3.0);
     let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
@@ -123,6 +124,7 @@ fn bouncing_spheres() -> Result<(), Box<dyn std::error::Error>> {
         image_width,
         samples_per_pixel,
         max_depth,
+        background,
         vfov,
         lookfrom,
         lookat,
@@ -169,6 +171,7 @@ fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = 400;
     let samples_per_pixel = 100;
     let max_depth = 50;
+    let background = Color::new_vec3(0.70, 0.80, 1.00);
     let vfov = 20.0;
     let lookfrom = Point3::new_vec3(13.0, 2.0, 3.0);
     let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
@@ -180,6 +183,7 @@ fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
         image_width,
         samples_per_pixel,
         max_depth,
+        background,
         vfov,
         lookfrom,
         lookat,
@@ -210,6 +214,7 @@ fn earth() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = 400;
     let samples_per_pixel = 100;
     let max_depth = 50;
+    let background = Color::new_vec3(0.70, 0.80, 1.00);
     let vfov = 20.0;
     let lookfrom = Point3::new_vec3(0.0, 0.0, 12.0);
     let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
@@ -221,6 +226,7 @@ fn earth() -> Result<(), Box<dyn std::error::Error>> {
         image_width,
         samples_per_pixel,
         max_depth,
+        background,
         vfov,
         lookfrom,
         lookat,
@@ -258,6 +264,7 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = 400;
     let samples_per_pixel = 100;
     let max_depth = 50;
+    let background = Color::new_vec3(0.70, 0.80, 1.00);
     let vfov = 20.0;
     let lookfrom = Point3::new_vec3(13.0, 2.0, 3.0);
     let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
@@ -269,6 +276,7 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
         image_width,
         samples_per_pixel,
         max_depth,
+        background,
         vfov,
         lookfrom,
         lookat,
@@ -329,6 +337,7 @@ fn quads() -> Result<(), Box<dyn std::error::Error>> {
     let image_width = 400;
     let samples_per_pixel = 100;
     let max_depth = 50;
+    let background = Color::new_vec3(0.70, 0.80, 1.00);
     let vfov = 80.0;
     let lookfrom = Point3::new_vec3(0.0, 0.0, 9.0);
     let lookat = Point3::new_vec3(0.0, 0.0, 0.0);
@@ -340,6 +349,7 @@ fn quads() -> Result<(), Box<dyn std::error::Error>> {
         image_width,
         samples_per_pixel,
         max_depth,
+        background,
         vfov,
         lookfrom,
         lookat,
@@ -358,13 +368,70 @@ fn quads() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = HittableList::new();
+    let pertext = Rc::new(NoiseTexture::new(4.0));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, -1000.0, 0.0),
+        1000.0,
+        Rc::new(Lambertian::new(pertext.clone())),
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, 2.0, 0.0),
+        2.0,
+        Rc::new(Lambertian::new(pertext.clone())),
+    )));
+    let difflight = Rc::new(DiffuseLight::from_color(Color::new_vec3(4.0, 4.0, 4.0)));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(3.0, 1.0, -2.0),
+        Vec3::new_vec3(2.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 2.0, 0.0),
+        difflight,
+    )));
+
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width = 400;
+    let samples_per_pixel = 100;
+    let max_depth = 50;
+    let background = Color::new_vec3(0.0, 0.0, 0.0);
+    let vfov = 20.0;
+    let lookfrom = Point3::new_vec3(26.0, 3.0, 6.0);
+    let lookat = Point3::new_vec3(0.0, 2.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        background,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image17.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
 fn main() {
-    match 5 {
+    match 6 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
         4 => perlin_spheres().unwrap(),
         5 => quads().unwrap(),
+        6 => simple_light().unwrap(),
         _ => {}
     }
 }
