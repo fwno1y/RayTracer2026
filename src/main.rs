@@ -1,6 +1,7 @@
 mod aabb;
 mod bvh;
 mod camera;
+mod constant_medium;
 mod hittable;
 mod hittable_list;
 mod interval;
@@ -14,7 +15,6 @@ mod sphere;
 mod texture;
 mod vec3;
 mod vec3color;
-mod constant_medium;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
@@ -24,6 +24,7 @@ use camera::Camera;
 use std::rc::Rc;
 
 use crate::bvh::BvhNode;
+use crate::constant_medium::ConstantMedium;
 use crate::hittable::{Hittable, RotateY, Translate};
 use crate::material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use crate::quad::{Quad, make_box};
@@ -526,6 +527,109 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = HittableList::new();
+    let red = Rc::new(Lambertian::from_color(Color::new_vec3(0.65, 0.05, 0.05)));
+    let white = Rc::new(Lambertian::from_color(Color::new_vec3(0.73, 0.73, 0.73)));
+    let green = Rc::new(Lambertian::from_color(Color::new_vec3(0.12, 0.45, 0.15)));
+    let light = Rc::new(DiffuseLight::from_color(Color::new_vec3(7.0, 7.0, 7.0)));
+
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
+        green,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
+        red,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        light,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Vec3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
+        white.clone(),
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(555.0, 555.0, 555.0),
+        Vec3::new_vec3(-555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -555.0),
+        white.clone(),
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(0.0, 0.0, 555.0),
+        Vec3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
+        white.clone(),
+    )));
+    let mut box1: Rc<dyn Hittable> = make_box(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(165.0, 330.0, 165.0),
+        white.clone(),
+    );
+    box1 = Rc::new(RotateY::new(box1, 15.0));
+    box1 = Rc::new(Translate::new(box1, Vec3::new_vec3(265.0, 0.0, 295.0)));
+    let mut box2: Rc<dyn Hittable> = make_box(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(165.0, 165.0, 165.0),
+        white.clone(),
+    );
+    box2 = Rc::new(RotateY::new(box2, -18.0));
+    box2 = Rc::new(Translate::new(box2, Vec3::new_vec3(130.0, 0.0, 65.0)));
+    world.add(Rc::new(ConstantMedium::from_color(
+        box1,
+        0.01,
+        Color::new_vec3(0.0, 0.0, 0.0),
+    )));
+    world.add(Rc::new(ConstantMedium::from_color(
+        box2,
+        0.01,
+        Color::new_vec3(1.0, 1.0, 1.0),
+    )));
+
+    let aspect_ratio = 1.0;
+    let image_width = 600;
+    let samples_per_pixel = 200;
+    let max_depth = 50;
+    let background = Color::new_vec3(0.0, 0.0, 0.0);
+    let vfov = 40.0;
+    let lookfrom = Point3::new_vec3(278.0, 278.0, -800.0);
+    let lookat = Point3::new_vec3(278.0, 278.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        background,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image22.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
 fn main() {
     match 7 {
         1 => bouncing_spheres().unwrap(),
@@ -535,6 +639,7 @@ fn main() {
         5 => quads().unwrap(),
         6 => simple_light().unwrap(),
         7 => cornell_box().unwrap(),
+        8 => cornell_smoke().unwrap(),
         _ => {}
     }
 }
