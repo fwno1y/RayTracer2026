@@ -630,8 +630,157 @@ fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+fn final_scene(
+    image_width: u32,
+    samples_per_pixel: u32,
+    max_depth: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut boxes1 = HittableList::new();
+    let ground = Rc::new(Lambertian::from_color(Color::new_vec3(0.48, 0.83, 0.53)));
+    let boxes_per_side = 20;
+    for i in 0..boxes_per_side {
+        for j in 0..boxes_per_side {
+            let w = 100.0;
+            let x0 = -1000.0 + i as f64 * w;
+            let z0 = -1000.0 + j as f64 * w;
+            let y0 = 0.0;
+            let x1 = x0 + w;
+            let y1 = random_double_in_range(1.0, 101.0);
+            let z1 = z0 + w;
+            boxes1.add(make_box(
+                Point3::new_vec3(x0, y0, z0),
+                Point3::new_vec3(x1, y1, z1),
+                ground.clone(),
+            ));
+        }
+    }
+    let mut world = HittableList::new();
+    world.add(BvhNode::from_list(boxes1));
+    let light = Rc::new(DiffuseLight::from_color(Color::new_vec3(7.0, 7.0, 7.0)));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(123.0, 554.0, 147.0),
+        Vec3::new_vec3(300.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 265.0),
+        light,
+    )));
+
+    let center1 = Point3::new_vec3(400.0, 400.0, 200.0);
+    let center2 = center1 + Vec3::new_vec3(30.0, 0.0, 0.0);
+    let sphere_material = Rc::new(Lambertian::from_color(Color::new_vec3(0.7, 0.3, 0.1)));
+    world.add(Rc::new(Sphere::new_move(
+        center1,
+        center2,
+        50.0,
+        sphere_material,
+    )));
+
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(260.0, 150.0, 45.0),
+        50.0,
+        Rc::new(Dielectric {
+            refractive_index: 1.5,
+        }),
+    )));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, 150.0, 145.0),
+        50.0,
+        Rc::new(Metal {
+            albedo: Color::new_vec3(0.8, 0.8, 0.9),
+            fuzz: 1.0,
+        }),
+    )));
+
+    let boundary = Rc::new(Sphere::new(
+        Point3::new_vec3(360.0, 150.0, 145.0),
+        70.0,
+        Rc::new(Dielectric {
+            refractive_index: 1.5,
+        }),
+    ));
+    world.add(boundary.clone());
+    world.add(Rc::new(ConstantMedium::from_color(
+        boundary,
+        0.2,
+        Color::new_vec3(0.2, 0.4, 0.9),
+    )));
+
+    let boundary = Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        5000.0,
+        Rc::new(Dielectric {
+            refractive_index: 1.5,
+        }),
+    ));
+    world.add(Rc::new(ConstantMedium::from_color(
+        boundary,
+        0.0001,
+        Color::new_vec3(1.0, 1.0, 1.0),
+    )));
+
+    let emat = Rc::new(Lambertian::new(Rc::new(ImageTexture::new("earthmap.jpg"))));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(400.0, 200.0, 400.0),
+        100.0,
+        emat.clone(),
+    )));
+
+    let pertext = Rc::new(NoiseTexture::new(0.2));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(220.0, 280.0, 300.0),
+        80.0,
+        Rc::new(Lambertian::new(pertext.clone())),
+    )));
+
+    let mut boxes2 = HittableList::new();
+    let white = Rc::new(Lambertian::from_color(Color::new_vec3(0.73, 0.73, 0.73)));
+    let ns = 1000;
+    for _j in 0..ns {
+        boxes2.add(Rc::new(Sphere::new(
+            Point3::random_in_range(0.0, 165.0),
+            10.0,
+            white.clone(),
+        )));
+    }
+
+    world.add(Rc::new(Translate::new(
+        Rc::new(RotateY::new(BvhNode::from_list(boxes2), 15.0)),
+        Vec3::new_vec3(-100.0, 270.0, 395.0),
+    )));
+
+    let aspect_ratio = 1.0;
+    let background = Color::new_vec3(0.0, 0.0, 0.0);
+    let vfov = 40.0;
+    let lookfrom = Point3::new_vec3(478.0, 278.0, -600.0);
+    let lookat = Point3::new_vec3(278.0, 278.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        background,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image23.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
 fn main() {
-    match 8 {
+    match 9 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
@@ -640,6 +789,7 @@ fn main() {
         6 => simple_light().unwrap(),
         7 => cornell_box().unwrap(),
         8 => cornell_smoke().unwrap(),
+        9 => final_scene(800, 10000, 40).unwrap(),
         _ => {}
     }
 }
