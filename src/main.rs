@@ -429,14 +429,94 @@ fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
+    let mut world = HittableList::new();
+    let red = Rc::new(Lambertian::from_color(Color::new_vec3(0.65, 0.05, 0.05)));
+    let white = Rc::new(Lambertian::from_color(Color::new_vec3(0.73, 0.73, 0.73)));
+    let green = Rc::new(Lambertian::from_color(Color::new_vec3(0.12, 0.45, 0.15)));
+    let light = Rc::new(DiffuseLight::from_color(Color::new_vec3(15.0, 15.0, 15.0)));
+
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
+        green,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
+        red,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        light,
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Vec3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
+        white.clone(),
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(555.0, 555.0, 555.0),
+        Vec3::new_vec3(-555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -555.0),
+        white.clone(),
+    )));
+    world.add(Rc::new(Quad::new(
+        Point3::new_vec3(0.0, 0.0, 555.0),
+        Vec3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
+        white.clone(),
+    )));
+
+    let aspect_ratio = 1.0;
+    let image_width = 600;
+    let samples_per_pixel = 200;
+    let max_depth = 50;
+    let background = Color::new_vec3(0.0, 0.0, 0.0);
+    let vfov = 40.0;
+    let lookfrom = Point3::new_vec3(278.0, 278.0, -800.0);
+    let lookat = Point3::new_vec3(278.0, 278.0, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        background,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img: RgbImage = camera.render(&world);
+    let path = std::path::Path::new("output/book2/image19.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+
+    println!(
+        "Output image as \"{}\"",
+        style(path.to_str().unwrap()).yellow()
+    );
+    Ok(())
+}
 fn main() {
-    match 6 {
+    match 7 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
         4 => perlin_spheres().unwrap(),
         5 => quads().unwrap(),
         6 => simple_light().unwrap(),
+        7 => cornell_box().unwrap(),
         _ => {}
     }
 }
