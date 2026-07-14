@@ -81,7 +81,7 @@ impl Hittable for Quad {
     }
 }
 
-pub fn make_box(a: Point3, b: Point3, mat: Rc<dyn Material>) -> HittableList {
+pub fn make_box(a: Point3, b: Point3, mat: Rc<dyn Material>) -> Rc<dyn Hittable> {
     let mut sides = HittableList::new();
     let min = Point3::new_vec3(a.x().min(b.x()), a.y().min(b.y()), a.z().min(b.z()));
     let max = Point3::new_vec3(a.x().max(b.x()), a.y().max(b.y()), a.z().max(b.z()));
@@ -124,5 +124,5 @@ pub fn make_box(a: Point3, b: Point3, mat: Rc<dyn Material>) -> HittableList {
         dz,
         mat.clone(),
     )));
-    sides
+    Rc::new(sides)
 }

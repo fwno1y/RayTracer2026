@@ -14,6 +14,7 @@ mod sphere;
 mod texture;
 mod vec3;
 mod vec3color;
+mod constant_medium;
 
 use crate::hittable_list::HittableList;
 use crate::rtweekend::{INFINITY, random_double, random_double_in_range};
@@ -23,6 +24,7 @@ use camera::Camera;
 use std::rc::Rc;
 
 use crate::bvh::BvhNode;
+use crate::hittable::{Hittable, RotateY, Translate};
 use crate::material::{Dielectric, DiffuseLight, Lambertian, Metal};
 use crate::quad::{Quad, make_box};
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
@@ -472,16 +474,22 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         Vec3::new_vec3(0.0, 555.0, 0.0),
         white.clone(),
     )));
-    world.add(Rc::new(make_box(
-        Point3::new_vec3(130.0, 0.0, 65.0),
-        Point3::new_vec3(295.0, 165.0, 230.0),
+    let mut box1: Rc<dyn Hittable> = make_box(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(165.0, 330.0, 165.0),
         white.clone(),
-    )));
-    world.add(Rc::new(make_box(
-        Point3::new_vec3(265.0, 0.0, 295.0),
-        Point3::new_vec3(430.0, 330.0, 460.0),
+    );
+    box1 = Rc::new(RotateY::new(box1, 15.0));
+    box1 = Rc::new(Translate::new(box1, Vec3::new_vec3(265.0, 0.0, 295.0)));
+    world.add(box1);
+    let mut box2: Rc<dyn Hittable> = make_box(
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(165.0, 165.0, 165.0),
         white.clone(),
-    )));
+    );
+    box2 = Rc::new(RotateY::new(box2, -18.0));
+    box2 = Rc::new(Translate::new(box2, Vec3::new_vec3(130.0, 0.0, 65.0)));
+    world.add(box2);
 
     let aspect_ratio = 1.0;
     let image_width = 600;
@@ -508,7 +516,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book2/image20.png");
+    let path = std::path::Path::new("output/book2/image21.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
