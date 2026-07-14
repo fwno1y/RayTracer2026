@@ -4,10 +4,10 @@ use crate::rtweekend::random_double;
 use crate::texture::{SolidColor, Texture};
 use crate::vec3::{Point3, Vec3, dot, random_unit_vector, reflect, refract, unit_vector};
 use crate::vec3color::Color;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[allow(dead_code)]
-pub trait Material {
+pub trait Material: Send + Sync {
     fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
         Color::new_vec3(0.0, 0.0, 0.0)
     }
@@ -16,17 +16,17 @@ pub trait Material {
     }
 }
 pub struct Lambertian {
-    tex: Rc<dyn Texture>,
+    tex: Arc<dyn Texture>,
 }
 impl Lambertian {
     #[allow(dead_code)]
     pub fn from_color(albedo: Color) -> Self {
         Lambertian {
-            tex: Rc::new(SolidColor::new(albedo)),
+            tex: Arc::new(SolidColor::new(albedo)),
         }
     }
     #[allow(dead_code)]
-    pub fn new(tex: Rc<dyn Texture>) -> Self {
+    pub fn new(tex: Arc<dyn Texture>) -> Self {
         Self { tex }
     }
 }
@@ -112,18 +112,18 @@ impl Material for Dielectric {
 }
 
 pub struct DiffuseLight {
-    tex: Rc<dyn Texture>,
+    tex: Arc<dyn Texture>,
 }
 
 impl DiffuseLight {
     #[allow(dead_code)]
-    pub fn new(tex: Rc<dyn Texture>) -> Self {
+    pub fn new(tex: Arc<dyn Texture>) -> Self {
         DiffuseLight { tex }
     }
     #[allow(dead_code)]
     pub fn from_color(emit: Color) -> Self {
         DiffuseLight {
-            tex: Rc::new(SolidColor::new(emit)),
+            tex: Arc::new(SolidColor::new(emit)),
         }
     }
 }
@@ -136,18 +136,18 @@ impl Material for DiffuseLight {
 }
 
 pub struct Isotropic {
-    tex: Rc<dyn Texture>,
+    tex: Arc<dyn Texture>,
 }
 
 impl Isotropic {
     #[allow(dead_code)]
-    pub fn new(tex: Rc<dyn Texture>) -> Self {
+    pub fn new(tex: Arc<dyn Texture>) -> Self {
         Isotropic { tex }
     }
     #[allow(dead_code)]
     pub fn from_color(albedo: Color) -> Self {
         Isotropic {
-            tex: Rc::new(SolidColor::new(albedo)),
+            tex: Arc::new(SolidColor::new(albedo)),
         }
     }
 }

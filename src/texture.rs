@@ -3,13 +3,13 @@ use crate::interval::Interval;
 use crate::perlin::Perlin;
 use crate::rtw_stb_image::RtwImage;
 use crate::vec3::Point3;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct SolidColor {
     albedo: Color,
 }
 
-pub trait Texture {
+pub trait Texture: Send + Sync {
     #[allow(dead_code)]
     fn value(&self, u: f64, v: f64, p: &Point3) -> Color;
 }
@@ -35,12 +35,12 @@ impl Texture for SolidColor {
 
 pub struct CheckerTexture {
     inv_scale: f64,
-    even: Rc<dyn Texture>,
-    odd: Rc<dyn Texture>,
+    even: Arc<dyn Texture>,
+    odd: Arc<dyn Texture>,
 }
 
 impl CheckerTexture {
-    pub fn new(scale: f64, even: Rc<dyn Texture>, odd: Rc<dyn Texture>) -> Self {
+    pub fn new(scale: f64, even: Arc<dyn Texture>, odd: Arc<dyn Texture>) -> Self {
         Self {
             inv_scale: 1.0 / scale,
             even,
@@ -50,8 +50,8 @@ impl CheckerTexture {
     pub fn from_color(scale: f64, c1: Color, c2: Color) -> Self {
         Self::new(
             scale,
-            Rc::new(SolidColor::new(c1)),
-            Rc::new(SolidColor::new(c2)),
+            Arc::new(SolidColor::new(c1)),
+            Arc::new(SolidColor::new(c2)),
         )
     }
 }

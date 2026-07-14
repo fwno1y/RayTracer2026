@@ -6,6 +6,7 @@ use crate::rtweekend::{INFINITY, degrees_to_radians};
 use crate::vec3::{Point3, Vec3, cross, random_in_unit_disk, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
+use rayon::prelude::*;
 
 #[allow(dead_code)]
 pub struct Camera {
@@ -40,24 +41,32 @@ impl Camera {
         let height = self.image_height;
         let mut img = RgbImage::new(width, height);
         let intensity = Interval::new(0.000, 0.999);
+        // 生成所有像素坐标
+        let pixels: Vec<(u32, u32)> = (0..height)
+            .flat_map(|j| (0..width).map(move |i| (i, j)))
+            .collect();
 
-        for j in 0..height {
-            for i in 0..width {
+        // 并行计算每个像素的颜色（借用 self 和 world）
+        let colors: Vec<Color> = pixels
+            .par_iter()
+            .map(|&(i, j)| {
                 let mut pixel_color = Color::new_vec3(0.0, 0.0, 0.0);
-
                 for _sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j);
                     pixel_color += self.ray_color(&r, self.max_depth, world);
                 }
-                // 平均颜色
-                pixel_color *= self.pixel_samples_scale;
-                // 写入像素
-                let rbyte = (256.0 * intensity.clamp(linear_to_gemma(pixel_color.x()))) as u8;
-                let gbyte = (256.0 * intensity.clamp(linear_to_gemma(pixel_color.y()))) as u8;
-                let bbyte = (256.0 * intensity.clamp(linear_to_gemma(pixel_color.z()))) as u8;
-                *img.get_pixel_mut(i, j) = image::Rgb([rbyte, gbyte, bbyte]);
-            }
+                pixel_color * self.pixel_samples_scale
+            })
+            .collect();
+
+        // 顺序写入图像
+        for (&(i, j), &color) in pixels.iter().zip(colors.iter()) {
+            let rbyte = (256.0 * intensity.clamp(linear_to_gemma(color.x()))) as u8;
+            let gbyte = (256.0 * intensity.clamp(linear_to_gemma(color.y()))) as u8;
+            let bbyte = (256.0 * intensity.clamp(linear_to_gemma(color.z()))) as u8;
+            *img.get_pixel_mut(i, j) = image::Rgb([rbyte, gbyte, bbyte]);
         }
+
         img
     }
     #[allow(clippy::too_many_arguments)]

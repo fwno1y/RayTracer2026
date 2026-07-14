@@ -1,5 +1,5 @@
 use crate::hittable::{HitRecord, Hittable};
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::aabb::Aabb;
 use crate::interval::Interval;
@@ -11,13 +11,17 @@ use crate::vec3::Vec3;
 use crate::vec3color::Color;
 
 pub struct ConstantMedium {
-    boundary: Rc<dyn Hittable>,
+    boundary: Arc<dyn Hittable>,
     neg_inv_density: f64,
-    phase_function: Rc<dyn Material>,
+    phase_function: Arc<dyn Material>,
 }
 
 impl ConstantMedium {
-    pub fn new(boundary: Rc<dyn Hittable>, density: f64, tex: Rc<dyn Material>) -> ConstantMedium {
+    pub fn new(
+        boundary: Arc<dyn Hittable>,
+        density: f64,
+        tex: Arc<dyn Material>,
+    ) -> ConstantMedium {
         ConstantMedium {
             boundary,
             neg_inv_density: -1.0 / density,
@@ -26,15 +30,15 @@ impl ConstantMedium {
     }
     #[allow(dead_code)]
     pub fn from_texture(
-        boundary: Rc<dyn Hittable>,
+        boundary: Arc<dyn Hittable>,
         density: f64,
-        tex: Rc<dyn Texture>,
+        tex: Arc<dyn Texture>,
     ) -> ConstantMedium {
-        let phase = Rc::new(Isotropic::new(tex));
+        let phase = Arc::new(Isotropic::new(tex));
         Self::new(boundary, density, phase)
     }
-    pub fn from_color(boundary: Rc<dyn Hittable>, density: f64, albedo: Color) -> ConstantMedium {
-        let phase = Rc::new(Isotropic::from_color(albedo));
+    pub fn from_color(boundary: Arc<dyn Hittable>, density: f64, albedo: Color) -> ConstantMedium {
+        let phase = Arc::new(Isotropic::from_color(albedo));
         Self::new(boundary, density, phase)
     }
 }

@@ -5,16 +5,16 @@ use crate::material::Material;
 use crate::ray::Ray;
 use crate::rtweekend::PI;
 use crate::vec3::{Point3, Vec3, dot};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct Sphere {
     center: Ray,
     radius: f64,
-    mat: Rc<dyn Material>,
+    mat: Arc<dyn Material>,
     bbox: Aabb,
 }
 impl Sphere {
-    pub fn new(static_center: Point3, radius: f64, material: Rc<dyn Material>) -> Self {
+    pub fn new(static_center: Point3, radius: f64, material: Arc<dyn Material>) -> Self {
         let rvec = Vec3::new_vec3(radius, radius, radius);
         Sphere {
             center: Ray::new_ray(static_center, Vec3::new_vec3(0.0, 0.0, 0.0), 0.0),
@@ -27,7 +27,7 @@ impl Sphere {
         center1: Point3,
         center2: Point3,
         radius: f64,
-        material: Rc<dyn Material>,
+        material: Arc<dyn Material>,
     ) -> Self {
         let center = Ray::new_ray(center1, center2 - center1, 0.0);
         let rvec = Vec3::new_vec3(radius, radius, radius);
