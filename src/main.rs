@@ -6,6 +6,7 @@ mod hittable;
 mod hittable_list;
 mod interval;
 mod material;
+mod model;
 mod perlin;
 mod quad;
 mod ray;
@@ -13,6 +14,7 @@ mod rtw_stb_image;
 mod rtweekend;
 mod sphere;
 mod texture;
+mod triangle;
 mod vec3;
 mod vec3color;
 
