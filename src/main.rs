@@ -547,21 +547,21 @@ fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
         red,
     )));
     world.add(Rc::new(Quad::new(
-        Point3::new_vec3(343.0, 554.0, 332.0),
-        Vec3::new_vec3(-130.0, 0.0, 0.0),
-        Vec3::new_vec3(0.0, 0.0, -105.0),
+        Point3::new_vec3(113.0, 554.0, 127.0),
+        Vec3::new_vec3(330.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 305.0),
         light,
     )));
     world.add(Rc::new(Quad::new(
-        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(0.0, 555.0, 0.0),
         Vec3::new_vec3(555.0, 0.0, 0.0),
         Vec3::new_vec3(0.0, 0.0, 555.0),
         white.clone(),
     )));
     world.add(Rc::new(Quad::new(
-        Point3::new_vec3(555.0, 555.0, 555.0),
-        Vec3::new_vec3(-555.0, 0.0, 0.0),
-        Vec3::new_vec3(0.0, 0.0, -555.0),
+        Point3::new_vec3(0.0, 0.0, 0.0),
+        Vec3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 555.0),
         white.clone(),
     )));
     world.add(Rc::new(Quad::new(
@@ -631,7 +631,7 @@ fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 fn main() {
-    match 7 {
+    match 8 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),

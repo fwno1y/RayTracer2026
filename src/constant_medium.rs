@@ -66,7 +66,7 @@ impl Hittable for ConstantMedium {
         }
         let ray_length = r.direction().length();
         let distance_inside_boundary = (rec2.t - rec1.t) * ray_length;
-        let hit_distance = self.neg_inv_density * random_double().log(10.0);
+        let hit_distance = self.neg_inv_density * random_double().ln();
         if hit_distance > distance_inside_boundary {
             return false;
         }
