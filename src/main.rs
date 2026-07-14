@@ -382,11 +382,16 @@ fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
         Rc::new(Lambertian::new(pertext.clone())),
     )));
     let difflight = Rc::new(DiffuseLight::from_color(Color::new_vec3(4.0, 4.0, 4.0)));
+    world.add(Rc::new(Sphere::new(
+        Point3::new_vec3(0.0, 7.0, 0.0),
+        2.0,
+        difflight.clone(),
+    )));
     world.add(Rc::new(Quad::new(
         Point3::new_vec3(3.0, 1.0, -2.0),
         Vec3::new_vec3(2.0, 0.0, 0.0),
         Vec3::new_vec3(0.0, 2.0, 0.0),
-        difflight,
+        difflight.clone(),
     )));
 
     let aspect_ratio = 16.0 / 9.0;
@@ -414,7 +419,7 @@ fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book2/image17.png");
+    let path = std::path::Path::new("output/book2/image18.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
