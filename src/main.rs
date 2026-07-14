@@ -24,7 +24,7 @@ use std::rc::Rc;
 
 use crate::bvh::BvhNode;
 use crate::material::{Dielectric, DiffuseLight, Lambertian, Metal};
-use crate::quad::Quad;
+use crate::quad::{Quad, make_box};
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use crate::vec3color::Color;
 use console::style;
@@ -472,6 +472,16 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         Vec3::new_vec3(0.0, 555.0, 0.0),
         white.clone(),
     )));
+    world.add(Rc::new(make_box(
+        Point3::new_vec3(130.0, 0.0, 65.0),
+        Point3::new_vec3(295.0, 165.0, 230.0),
+        white.clone(),
+    )));
+    world.add(Rc::new(make_box(
+        Point3::new_vec3(265.0, 0.0, 295.0),
+        Point3::new_vec3(430.0, 330.0, 460.0),
+        white.clone(),
+    )));
 
     let aspect_ratio = 1.0;
     let image_width = 600;
@@ -498,7 +508,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book2/image19.png");
+    let path = std::path::Path::new("output/book2/image20.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
