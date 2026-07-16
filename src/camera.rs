@@ -24,6 +24,8 @@ pub struct Camera {
     focus_dist: f64,
     image_height: u32,
     pixel_samples_scale: f64,
+    sqrt_spp: u32,
+    recip_sqrt_spp: f64,
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_u: Vec3,
@@ -51,9 +53,11 @@ impl Camera {
             .par_iter()
             .map(|&(i, j)| {
                 let mut pixel_color = Color::new_vec3(0.0, 0.0, 0.0);
-                for _sample in 0..self.samples_per_pixel {
-                    let r = self.get_ray(i, j);
-                    pixel_color += self.ray_color(&r, self.max_depth, world);
+                for s_i in 0..self.sqrt_spp {
+                    for s_j in 0..self.sqrt_spp {
+                        let r = self.get_ray(i, j, s_i, s_j);
+                        pixel_color += self.ray_color(&r, self.max_depth, world);
+                    }
                 }
                 pixel_color * self.pixel_samples_scale
             })
@@ -86,7 +90,9 @@ impl Camera {
         let image_height = (image_width as f64 / aspect_ratio) as u32;
         let image_height = if image_height < 1 { 1 } else { image_height };
 
+        let sqrt_spp = (samples_per_pixel as f64).sqrt() as u32;
         let pixel_samples_scale = 1.0 / samples_per_pixel as f64;
+        let recip_sqrt_spp = 1.0 / sqrt_spp as f64;
 
         let center = lookfrom;
 
@@ -125,6 +131,8 @@ impl Camera {
             focus_dist,
             image_height,
             pixel_samples_scale,
+            sqrt_spp,
+            recip_sqrt_spp,
             center,
             pixel00_loc,
             pixel_delta_u,
@@ -136,8 +144,8 @@ impl Camera {
             defocus_disk_v,
         }
     }
-    fn get_ray(&self, i: u32, j: u32) -> Ray {
-        let offset = Self::sample_square();
+    fn get_ray(&self, i: u32, j: u32, s_i: u32, s_j: u32) -> Ray {
+        let offset = Self::sample_square_stratified(self, s_i, s_j);
         let pixel_sample = self.pixel00_loc
             + ((i as f64 + offset.x()) * self.pixel_delta_u)
             + ((j as f64 + offset.y()) * self.pixel_delta_v);
@@ -150,6 +158,7 @@ impl Camera {
         let ray_time = random_double();
         Ray::new_ray(ray_origin, ray_direction, ray_time)
     }
+    #[allow(dead_code)]
     fn sample_square() -> Vec3 {
         Vec3::new_vec3(random_double() - 0.5, random_double() - 0.5, 0.0)
     }
@@ -177,5 +186,10 @@ impl Camera {
             }
         }
         color_from_emission
+    }
+    fn sample_square_stratified(&self, s_i: u32, s_j: u32) -> Vec3 {
+        let px = ((s_i as f64 + random_double()) * self.recip_sqrt_spp) - 0.5;
+        let py = ((s_j as f64 + random_double()) * self.recip_sqrt_spp) - 0.5;
+        Vec3::new_vec3(px, py, 0.0)
     }
 }
