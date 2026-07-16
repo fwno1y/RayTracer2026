@@ -46,12 +46,8 @@ impl Material for Lambertian {
         let attenuation = self.tex.value(rec.u, rec.v, &rec.p);
         Some((attenuation, scattered))
     }
-    fn scattering_pdf(&self, _r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
-        let cos_theta = dot(rec.normal, unit_vector(scattered.direction()));
-        if cos_theta < 0.0 {
-            return 0.0;
-        }
-        cos_theta / PI
+    fn scattering_pdf(&self, _r_in: &Ray, _rec: &HitRecord, _scattered: &Ray) -> f64 {
+        1.0 / 2.0 * PI
     }
 }
 
