@@ -1,8 +1,8 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
-use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
+use crate::rtweekend::{PI, random_double};
 use crate::vec3::{Point3, Vec3, cross, random_in_unit_disk, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
@@ -175,15 +175,15 @@ impl Camera {
         if !world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
             return self.background;
         }
-        let mut color_from_emission = Color::new_vec3(0.0, 0.0, 0.0);
-        if let Some(mat) = &rec.mat {
-            color_from_emission = mat.emitted(rec.u, rec.v, &rec.p);
-        }
-        if let Some(mat) = &rec.mat {
-            if let Some((attenuation, scattered)) = mat.scatter(r, &rec) {
-                let color_from_scatter = attenuation * self.ray_color(&scattered, depth - 1, world);
-                return color_from_emission + color_from_scatter;
-            }
+        let mat = rec.mat.as_ref();
+        let color_from_emission = mat.unwrap().emitted(rec.u, rec.v, &rec.p);
+        if let Some((attenuation, scattered)) = mat.unwrap().scatter(r, &rec) {
+            let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
+            let pdf_value = 1.0 / (2.0 * PI);
+            let color_from_scatter =
+                (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
+                    / pdf_value;
+            return color_from_emission + color_from_scatter;
         }
         color_from_emission
     }
