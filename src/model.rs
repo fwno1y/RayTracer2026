@@ -2,11 +2,11 @@ use crate::hittable_list::HittableList;
 use crate::material::Material;
 use crate::triangle::Triangle;
 use crate::vec3::Point3;
-use std::sync::Arc;
-use std::fs::File;
-use std::io::{Read, Cursor};
-use std::path::PathBuf;
 use ahash::AHashMap;
+use std::fs::File;
+use std::io::{Cursor, Read};
+use std::path::PathBuf;
+use std::sync::Arc;
 use tobj::{LoadOptions, load_obj_buf};
 
 #[allow(dead_code)]
@@ -26,7 +26,8 @@ pub fn load_obj_(path: &PathBuf, default_mat: Arc<dyn Material>) -> HittableList
         |_| -> Result<(Vec<tobj::Material>, AHashMap<String, usize>), tobj::LoadError> {
             Ok((Vec::new(), AHashMap::new())) // 忽略所有材质文件
         },
-    ).expect("Failed to parse OBJ data");
+    )
+    .expect("Failed to parse OBJ data");
 
     let mut world = HittableList::new();
 

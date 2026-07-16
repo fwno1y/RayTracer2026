@@ -444,37 +444,31 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
 
     world.add(Arc::new(Quad::new(
         Point3::new_vec3(555.0, 0.0, 0.0),
-        Vec3::new_vec3(0.0, 555.0, 0.0),
         Vec3::new_vec3(0.0, 0.0, 555.0),
+        Vec3::new_vec3(0.0, 555.0, 0.0),
         green,
     )));
     world.add(Arc::new(Quad::new(
-        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(0.0, 0.0, 555.0),
+        Vec3::new_vec3(0.0, 0.0, -555.0),
         Vec3::new_vec3(0.0, 555.0, 0.0),
-        Vec3::new_vec3(0.0, 0.0, 555.0),
         red,
     )));
     world.add(Arc::new(Quad::new(
-        Point3::new_vec3(343.0, 554.0, 332.0),
-        Vec3::new_vec3(-130.0, 0.0, 0.0),
-        Vec3::new_vec3(0.0, 0.0, -105.0),
-        light,
-    )));
-    world.add(Arc::new(Quad::new(
-        Point3::new_vec3(0.0, 0.0, 0.0),
+        Point3::new_vec3(0.0, 555.0, 0.0),
         Vec3::new_vec3(555.0, 0.0, 0.0),
         Vec3::new_vec3(0.0, 0.0, 555.0),
-        white.clone(),
-    )));
-    world.add(Arc::new(Quad::new(
-        Point3::new_vec3(555.0, 555.0, 555.0),
-        Vec3::new_vec3(-555.0, 0.0, 0.0),
-        Vec3::new_vec3(0.0, 0.0, -555.0),
         white.clone(),
     )));
     world.add(Arc::new(Quad::new(
         Point3::new_vec3(0.0, 0.0, 555.0),
         Vec3::new_vec3(555.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -555.0),
+        white.clone(),
+    )));
+    world.add(Arc::new(Quad::new(
+        Point3::new_vec3(555.0, 0.0, 555.0),
+        Vec3::new_vec3(-555.0, 0.0, 0.0),
         Vec3::new_vec3(0.0, 555.0, 0.0),
         white.clone(),
     )));
@@ -483,6 +477,12 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         Point3::new_vec3(165.0, 330.0, 165.0),
         white.clone(),
     );
+    world.add(Arc::new(Quad::new(
+        Point3::new_vec3(213.0, 554.0, 227.0),
+        Vec3::new_vec3(130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, 105.0),
+        light,
+    )));
     box1 = Arc::new(RotateY::new(box1, 15.0));
     box1 = Arc::new(Translate::new(box1, Vec3::new_vec3(265.0, 0.0, 295.0)));
     world.add(box1);
@@ -783,28 +783,21 @@ fn final_scene(
     Ok(())
 }
 fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Current working directory: {:?}", std::env::current_dir().unwrap());
+    println!(
+        "Current working directory: {:?}",
+        std::env::current_dir().unwrap()
+    );
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let obj_path = std::path::PathBuf::from(manifest_dir)
         .join("doc")
         .join("assets")
         .join("Mauser_98K.obj");
 
-    println!("Looking for file at: {}", obj_path.display());
-    if !obj_path.exists() {
-        panic!("File not found: {}", obj_path.display());
-    }
-
     let model_mat = Arc::new(Lambertian::from_color(Color::new_vec3(0.8, 0.6, 0.2)));
     let model_world = load_obj_(&obj_path, model_mat);
-    println!("Loaded {} triangles", model_world.objects.len());
 
     let bvh_model = BvhNode::from_list(model_world);
     let bbox = bvh_model.bounding_box();
-    println!("Model bounding box: min=({:.3}, {:.3}, {:.3}), max=({:.3}, {:.3}, {:.3})",
-             bbox.x.min, bbox.y.min, bbox.z.min,
-             bbox.x.max, bbox.y.max, bbox.z.max
-    );
 
     // 计算包围盒中心和对角线长度
     let min_p = Point3::new_vec3(bbox.x.min, bbox.y.min, bbox.z.min);
@@ -814,7 +807,6 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
     let size = if size < 1e-6 { 10.0 } else { size };
     let lookfrom = center + Vec3::new_vec3(1.0, 0.5, 1.0) * size * 1.5;
     let lookat = center;
-    println!("Camera: lookfrom={:?}, lookat={:?}", lookfrom, lookat);
 
     let mut world = HittableList::new();
     world.add(bvh_model);
