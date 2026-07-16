@@ -29,6 +29,7 @@ use crate::bvh::BvhNode;
 use crate::constant_medium::ConstantMedium;
 use crate::hittable::{Hittable, RotateY, Translate};
 use crate::material::{Dielectric, DiffuseLight, Lambertian, Metal};
+use crate::model::load_obj_;
 use crate::quad::{Quad, make_box};
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
 use crate::vec3color::Color;
@@ -781,8 +782,76 @@ fn final_scene(
     );
     Ok(())
 }
+fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Current working directory: {:?}", std::env::current_dir().unwrap());
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let obj_path = std::path::PathBuf::from(manifest_dir)
+        .join("doc")
+        .join("assets")
+        .join("Mauser_98K.obj");
+
+    println!("Looking for file at: {}", obj_path.display());
+    if !obj_path.exists() {
+        panic!("File not found: {}", obj_path.display());
+    }
+
+    let model_mat = Arc::new(Lambertian::from_color(Color::new_vec3(0.8, 0.6, 0.2)));
+    let model_world = load_obj_(&obj_path, model_mat);
+    println!("Loaded {} triangles", model_world.objects.len());
+
+    let bvh_model = BvhNode::from_list(model_world);
+    let bbox = bvh_model.bounding_box();
+    println!("Model bounding box: min=({:.3}, {:.3}, {:.3}), max=({:.3}, {:.3}, {:.3})",
+             bbox.x.min, bbox.y.min, bbox.z.min,
+             bbox.x.max, bbox.y.max, bbox.z.max
+    );
+
+    // 计算包围盒中心和对角线长度
+    let min_p = Point3::new_vec3(bbox.x.min, bbox.y.min, bbox.z.min);
+    let max_p = Point3::new_vec3(bbox.x.max, bbox.y.max, bbox.z.max);
+    let center = (min_p + max_p) * 0.5;
+    let size = (max_p - min_p).length();
+    let size = if size < 1e-6 { 10.0 } else { size };
+    let lookfrom = center + Vec3::new_vec3(1.0, 0.5, 1.0) * size * 1.5;
+    let lookat = center;
+    println!("Camera: lookfrom={:?}, lookat={:?}", lookfrom, lookat);
+
+    let mut world = HittableList::new();
+    world.add(bvh_model);
+
+    // 相机参数
+    let aspect_ratio = 1.0;
+    let image_width = 600;
+    let samples_per_pixel = 200;
+    let max_depth = 50;
+    let background = Color::new_vec3(0.7, 0.8, 1.0);
+    let vfov = 40.0;
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let defocus_angle = 0.0;
+    let focus_dist = 10.0;
+
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        background,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+    let img = camera.render(&world);
+    let path = std::path::Path::new("output/test_obj.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+    println!("Test OBJ image saved to {}", path.display());
+    Ok(())
+}
 fn main() {
-    match 9 {
+    match 10 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
@@ -792,6 +861,7 @@ fn main() {
         7 => cornell_box().unwrap(),
         8 => cornell_smoke().unwrap(),
         9 => final_scene(800, 10000, 40).unwrap(),
+        10 => test_obj().unwrap(),
         _ => {}
     }
 }
