@@ -497,7 +497,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
 
     let aspect_ratio = 1.0;
     let image_width = 600;
-    let samples_per_pixel = 200;
+    let samples_per_pixel = 64;
     let max_depth = 50;
     let background = Color::new_vec3(0.0, 0.0, 0.0);
     let vfov = 40.0;
@@ -520,7 +520,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book2/image21.png");
+    let path = std::path::Path::new("output/book3/image1.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
@@ -843,7 +843,7 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 fn main() {
-    match 10 {
+    match 7 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
