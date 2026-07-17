@@ -180,7 +180,8 @@ impl Camera {
         if let Some((attenuation, scattered, pdf_value)) = mat.unwrap().scatter(r, &rec) {
             let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
             let color_from_scatter =
-                (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world)) / pdf_value;
+                (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
+                    / pdf_value;
             return color_from_emission + color_from_scatter;
         }
         color_from_emission
