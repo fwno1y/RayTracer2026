@@ -1,8 +1,8 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
+use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
-use crate::rtweekend::{random_double};
 use crate::vec3::{Point3, Vec3, cross, random_in_unit_disk, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;

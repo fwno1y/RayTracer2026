@@ -7,6 +7,7 @@ mod hittable_list;
 mod interval;
 mod material;
 mod model;
+mod onb;
 mod perlin;
 mod quad;
 mod ray;
