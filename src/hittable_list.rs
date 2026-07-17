@@ -2,9 +2,9 @@ use crate::aabb::Aabb;
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
-use std::sync::Arc;
 use crate::rtweekend::random_double;
 use crate::vec3::{Point3, Vec3};
+use std::sync::Arc;
 
 pub struct HittableList {
     pub objects: Vec<Arc<dyn Hittable>>,
@@ -49,7 +49,9 @@ impl Hittable for HittableList {
         self.bbox
     }
     fn pdf_value(&self, origin: Point3, direction: Vec3) -> f64 {
-        if self.objects.is_empty() { return 0.0; }
+        if self.objects.is_empty() {
+            return 0.0;
+        }
         let mut sum = 0.0;
         for obj in &self.objects {
             sum += obj.pdf_value(origin, direction);
