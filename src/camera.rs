@@ -176,7 +176,7 @@ impl Camera {
             return self.background;
         }
         let mat = rec.mat.as_ref();
-        let color_from_emission = mat.unwrap().emitted(rec.u, rec.v, &rec.p);
+        let color_from_emission = mat.unwrap().emitted(r, &rec, rec.u, rec.v, &rec.p);
         let on_light = Point3::new_vec3(
             random_double_in_range(213.0, 343.0),
             554.0,

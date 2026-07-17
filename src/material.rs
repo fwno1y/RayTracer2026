@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 #[allow(dead_code)]
 pub trait Material: Send + Sync {
-    fn emitted(&self, _u: f64, _v: f64, _p: &Point3) -> Color {
+    fn emitted(&self, _r_in: &Ray, _rec: &HitRecord, _u: f64, _v: f64, _p: &Point3) -> Color {
         Color::new_vec3(0.0, 0.0, 0.0)
     }
     fn scatter(&self, _r_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray, f64)> {
@@ -139,7 +139,10 @@ impl DiffuseLight {
 
 impl Material for DiffuseLight {
     #[allow(dead_code)]
-    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+    fn emitted(&self, _r_in: &Ray, rec: &HitRecord, u: f64, v: f64, p: &Point3) -> Color {
+        if !rec.front_face {
+            return Color::new_vec3(0.0, 0.0, 0.0);
+        }
         self.tex.value(u, v, p)
     }
 }
