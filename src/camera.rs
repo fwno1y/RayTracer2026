@@ -145,7 +145,7 @@ impl Camera {
         }
     }
     fn get_ray(&self, i: u32, j: u32, s_i: u32, s_j: u32) -> Ray {
-        let offset = Self::sample_square_stratified(self, s_i, s_j);
+        let offset = self.sample_square_stratified(s_i, s_j);
         let pixel_sample = self.pixel00_loc
             + ((i as f64 + offset.x()) * self.pixel_delta_u)
             + ((j as f64 + offset.y()) * self.pixel_delta_v);
@@ -177,12 +177,10 @@ impl Camera {
         }
         let mat = rec.mat.as_ref();
         let color_from_emission = mat.unwrap().emitted(rec.u, rec.v, &rec.p);
-        if let Some((attenuation, scattered)) = mat.unwrap().scatter(r, &rec) {
+        if let Some((attenuation, scattered, pdf_value)) = mat.unwrap().scatter(r, &rec) {
             let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
-            let pdf_value = scattering_pdf;
             let color_from_scatter =
-                (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
-                    / pdf_value;
+                (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world)) / pdf_value;
             return color_from_emission + color_from_scatter;
         }
         color_from_emission

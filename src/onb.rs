@@ -15,7 +15,7 @@ impl Onb {
         };
         let v = unit_vector(cross(w, a));
         let u = cross(w, v);
-        Self { axis: [u, w, v] }
+        Self { axis: [u, v, w] }
     }
     #[allow(dead_code)]
     pub fn u(&self) -> Vec3 {
@@ -30,7 +30,7 @@ impl Onb {
         self.axis[2]
     }
     #[allow(dead_code)]
-    pub fn transform(&self, v: &Vec3) -> Vec3 {
+    pub fn transform(&self, v: Vec3) -> Vec3 {
         v[0] * self.axis[0] + v[1] * self.axis[1] + v[2] * self.axis[2]
     }
 }
