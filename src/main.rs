@@ -30,7 +30,7 @@ use std::sync::Arc;
 use crate::bvh::BvhNode;
 use crate::constant_medium::ConstantMedium;
 use crate::hittable::{Hittable, RotateY, Translate};
-use crate::material::{Dielectric, DiffuseLight, Lambertian, Metal};
+use crate::material::{Dielectric, DiffuseLight, EmptyMaterial, Lambertian, Metal};
 use crate::model::load_obj_;
 use crate::quad::{Quad, make_box};
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
@@ -116,6 +116,16 @@ fn bouncing_spheres() -> Result<(), Box<dyn std::error::Error>> {
     new_world.add(bvh_root);
     world = new_world;
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
     let samples_per_pixel = 100;
@@ -140,7 +150,7 @@ fn bouncing_spheres() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
 
     let path = std::path::Path::new("output/book2/image2.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
@@ -175,6 +185,17 @@ fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
         10.0,
         Arc::new(Lambertian::new(checker)),
     )));
+
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
     let samples_per_pixel = 100;
@@ -199,7 +220,7 @@ fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image3.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -218,6 +239,17 @@ fn earth() -> Result<(), Box<dyn std::error::Error>> {
         2.0,
         earth_surface.clone(),
     ));
+
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
     let samples_per_pixel = 100;
@@ -244,7 +276,7 @@ fn earth() -> Result<(), Box<dyn std::error::Error>> {
     );
     let mut world = HittableList::new();
     world.add(globe);
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image5.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -268,6 +300,17 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
         2.0,
         Arc::new(Lambertian::new(pertext.clone())),
     )));
+
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
     let samples_per_pixel = 100;
@@ -292,7 +335,7 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image15.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -341,6 +384,16 @@ fn quads() -> Result<(), Box<dyn std::error::Error>> {
         lower_teal,
     )));
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 1.0;
     let image_width = 400;
     let samples_per_pixel = 100;
@@ -365,7 +418,7 @@ fn quads() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image16.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -402,6 +455,16 @@ fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
         difflight.clone(),
     )));
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 400;
     let samples_per_pixel = 100;
@@ -426,7 +489,7 @@ fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image18.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -497,9 +560,19 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
     box2 = Arc::new(Translate::new(box2, Vec3::new_vec3(130.0, 0.0, 65.0)));
     world.add(box2);
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 1.0;
     let image_width = 600;
-    let samples_per_pixel = 1000;
+    let samples_per_pixel = 10;
     let max_depth = 50;
     let background = Color::new_vec3(0.0, 0.0, 0.0);
     let vfov = 40.0;
@@ -521,8 +594,8 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
-    let path = std::path::Path::new("output/book3/image9.png");
+    let img: RgbImage = camera.render(&world, &light_lists);
+    let path = std::path::Path::new("output/book3/image10.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
@@ -600,6 +673,16 @@ fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
         Color::new_vec3(1.0, 1.0, 1.0),
     )));
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 1.0;
     let image_width = 600;
     let samples_per_pixel = 200;
@@ -624,7 +707,7 @@ fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image22.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -752,6 +835,16 @@ fn final_scene(
         Vec3::new_vec3(-100.0, 270.0, 395.0),
     )));
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
+
     let aspect_ratio = 1.0;
     let background = Color::new_vec3(0.0, 0.0, 0.0);
     let vfov = 40.0;
@@ -773,7 +866,7 @@ fn final_scene(
         defocus_angle,
         focus_dist,
     );
-    let img: RgbImage = camera.render(&world);
+    let img: RgbImage = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/book2/image23.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
@@ -813,6 +906,15 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
     let mut world = HittableList::new();
     world.add(bvh_model);
 
+    let mut light_lists = HittableList::new();
+    let empty_material = Arc::new(EmptyMaterial);
+    let lights = Arc::new(Quad::new(
+        Point3::new_vec3(343.0, 554.0, 332.0),
+        Vec3::new_vec3(-130.0, 0.0, 0.0),
+        Vec3::new_vec3(0.0, 0.0, -105.0),
+        empty_material.clone(),
+    ));
+    light_lists.add(lights);
     // 相机参数
     let aspect_ratio = 1.0;
     let image_width = 600;
@@ -837,7 +939,7 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
         defocus_angle,
         focus_dist,
     );
-    let img = camera.render(&world);
+    let img = camera.render(&world, &light_lists);
     let path = std::path::Path::new("output/test_obj.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;

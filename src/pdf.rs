@@ -1,6 +1,7 @@
+use crate::hittable::Hittable;
 use crate::onb::Onb;
 use crate::rtweekend::PI;
-use crate::vec3::{Vec3, dot, random_cosine_direction, random_unit_vector, unit_vector};
+use crate::vec3::{Point3, Vec3, dot, random_cosine_direction, random_unit_vector, unit_vector};
 
 #[allow(dead_code)]
 pub trait Pdf {
@@ -28,6 +29,7 @@ pub struct CosinePDF {
 }
 
 impl CosinePDF {
+    #[allow(dead_code)]
     pub fn new(w: Vec3) -> CosinePDF {
         CosinePDF { uvw: Onb::new(w) }
     }
@@ -39,5 +41,26 @@ impl Pdf for CosinePDF {
     }
     fn generate(&self) -> Vec3 {
         self.uvw.transform(random_cosine_direction())
+    }
+}
+
+pub struct HittablePDF<'a> {
+    objects: &'a dyn Hittable,
+    origin: Point3,
+}
+
+impl<'a> HittablePDF<'a> {
+    pub fn new(objects: &'a dyn Hittable, origin: Point3) -> HittablePDF<'a> {
+        HittablePDF { objects, origin }
+    }
+}
+
+impl<'a> Pdf for HittablePDF<'a> {
+    fn value(&self, direction: Vec3) -> f64 {
+        self.objects.pdf_value(self.origin, direction)
+    }
+    fn generate(&self) -> Vec3 {
+        self.objects
+            .random(Vec3::new_vec3(self.origin.x, self.origin.y, self.origin.z))
     }
 }

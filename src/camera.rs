@@ -1,6 +1,6 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
-use crate::pdf::{CosinePDF, Pdf};
+use crate::pdf::{HittablePDF, Pdf};
 use crate::ray::Ray;
 use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
@@ -39,7 +39,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn render(&self, world: &dyn Hittable) -> RgbImage {
+    pub fn render(&self, world: &dyn Hittable, lights: &dyn Hittable) -> RgbImage {
         let width = self.image_width;
         let height = self.image_height;
         let mut img = RgbImage::new(width, height);
@@ -57,7 +57,7 @@ impl Camera {
                 for s_i in 0..self.sqrt_spp {
                     for s_j in 0..self.sqrt_spp {
                         let r = self.get_ray(i, j, s_i, s_j);
-                        pixel_color += self.ray_color(&r, self.max_depth, world);
+                        pixel_color += self.ray_color(&r, self.max_depth, world, lights);
                     }
                 }
                 pixel_color * self.pixel_samples_scale
@@ -168,7 +168,7 @@ impl Camera {
         self.center + (p[0] * self.defocus_disk_u) + (p[1] * self.defocus_disk_v)
     }
     #[allow(clippy::only_used_in_recursion)]
-    fn ray_color(&self, r: &Ray, depth: u32, world: &dyn Hittable) -> Color {
+    fn ray_color(&self, r: &Ray, depth: u32, world: &dyn Hittable, lights: &dyn Hittable) -> Color {
         if depth == 0 {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
@@ -179,13 +179,12 @@ impl Camera {
         let mat = rec.mat.as_ref();
         let color_from_emission = mat.unwrap().emitted(r, &rec, rec.u, rec.v, &rec.p);
         if let Some((attenuation, _scattered, _pdf_value)) = mat.unwrap().scatter(r, &rec) {
-            let surface_pdf = CosinePDF::new(rec.normal);
-            let scattered = Ray::new_ray(rec.p, surface_pdf.generate(), r.time());
-            let pdf_value = surface_pdf.value(scattered.direction());
+            let light_pdf = HittablePDF::new(lights, rec.p);
+            let scattered = Ray::new_ray(rec.p, light_pdf.generate(), r.time());
+            let pdf_value = light_pdf.value(scattered.direction());
             let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
-            let color_from_scatter =
-                (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))
-                    / pdf_value;
+            let sample_color = self.ray_color(&scattered, depth - 1, world, lights);
+            let color_from_scatter = (attenuation * scattering_pdf * sample_color) / pdf_value;
             return color_from_emission + color_from_scatter;
         }
         color_from_emission

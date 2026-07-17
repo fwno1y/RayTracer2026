@@ -175,3 +175,17 @@ impl Material for Isotropic {
         1.0 / (4.0 * PI)
     }
 }
+
+pub struct EmptyMaterial;
+
+impl Material for EmptyMaterial {
+    fn emitted(&self, _r: &Ray, _rec: &HitRecord, _u: f64, _v: f64, _p: &Point3) -> Color {
+        Color::new_vec3(0.0, 0.0, 0.0)
+    }
+    fn scatter(&self, _r: &Ray, _rec: &HitRecord) -> Option<(Color, Ray, f64)> {
+        None
+    }
+    fn scattering_pdf(&self, _r: &Ray, _rec: &HitRecord, _scattered: &Ray) -> f64 {
+        0.0
+    }
+}

@@ -4,6 +4,7 @@ use crate::hittable_list::HittableList;
 use crate::interval::Interval;
 use crate::material::Material;
 use crate::ray::Ray;
+use crate::rtweekend::{INFINITY, random_double};
 use crate::vec3::{Point3, Vec3, cross, dot, unit_vector};
 use std::sync::Arc;
 
@@ -16,6 +17,7 @@ pub struct Quad {
     bbox: Aabb,
     normal: Vec3,
     d: f64,
+    area: f64,
 }
 
 impl Quad {
@@ -24,6 +26,7 @@ impl Quad {
         let normal = unit_vector(n);
         let d = dot(normal, q);
         let w = n / dot(n, n);
+        let area = n.length();
         let mut quad = Self {
             q,
             u,
@@ -33,6 +36,7 @@ impl Quad {
             bbox: Aabb::empty(),
             normal,
             d,
+            area,
         };
         quad.set_bounding_box();
         quad
@@ -78,6 +82,23 @@ impl Hittable for Quad {
         rec.mat = Some(self.mat.clone());
         rec.set_face_normal(r, self.normal);
         true
+    }
+    fn pdf_value(&self, origin: Point3, direction: Vec3) -> f64 {
+        let mut rec = HitRecord::default();
+        if !self.hit(
+            &Ray::new_ray(origin, direction, 0.0),
+            Interval::new(0.001, INFINITY),
+            &mut rec,
+        ) {
+            return 0.0;
+        }
+        let distance_squared = rec.t * rec.t * direction.length_squared();
+        let cosine = (dot(direction, rec.normal) / direction.length()).abs();
+        distance_squared / (cosine * self.area)
+    }
+    fn random(&self, origin: Vec3) -> Vec3 {
+        let p = self.q + (random_double() * self.u) + (random_double() * self.v);
+        p - origin
     }
 }
 
