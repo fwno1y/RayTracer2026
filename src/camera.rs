@@ -1,9 +1,9 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
-use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
-use crate::vec3::{Point3, Vec3, cross, random_in_unit_disk, unit_vector};
+use crate::rtweekend::{random_double, random_double_in_range};
+use crate::vec3::{Point3, Vec3, cross, dot, random_in_unit_disk, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
 use rayon::prelude::*;
@@ -177,7 +177,25 @@ impl Camera {
         }
         let mat = rec.mat.as_ref();
         let color_from_emission = mat.unwrap().emitted(rec.u, rec.v, &rec.p);
-        if let Some((attenuation, scattered, pdf_value)) = mat.unwrap().scatter(r, &rec) {
+        let on_light = Point3::new_vec3(
+            random_double_in_range(213.0, 343.0),
+            554.0,
+            random_double_in_range(227.0, 332.0),
+        );
+        let mut to_light = on_light - rec.p;
+        let distance_squared = to_light.length_squared();
+        to_light = unit_vector(to_light);
+        if dot(to_light, rec.normal) < 0.0 {
+            return color_from_emission;
+        }
+        let light_area = (343.0 - 213.0) * (332.0 - 227.0);
+        let light_cosine = to_light.y.abs();
+        if light_cosine < 0.000001 {
+            return color_from_emission;
+        }
+        if let Some((attenuation, mut scattered, mut pdf_value)) = mat.unwrap().scatter(r, &rec) {
+            pdf_value = distance_squared / (light_cosine * light_area);
+            scattered = Ray::new_ray(rec.p, to_light, r.time());
             let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
             let color_from_scatter =
                 (attenuation * scattering_pdf * self.ray_color(&scattered, depth - 1, world))

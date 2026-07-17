@@ -165,6 +165,10 @@ impl Material for Isotropic {
     fn scatter(&self, _r_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray, f64)> {
         let scattered = Ray::new_ray(rec.p, random_unit_vector(), _r_in.time());
         let attenuation = self.tex.value(rec.u, rec.v, &rec.p);
-        Some((attenuation, scattered, 1.0 / (2.0 * PI)))
+        let pdf = 1.0 / (4.0 * PI);
+        Some((attenuation, scattered, pdf))
+    }
+    fn scattering_pdf(&self, _r_in: &Ray, _rec: &HitRecord, _scattered: &Ray) -> f64 {
+        1.0 / (4.0 * PI)
     }
 }
