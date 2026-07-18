@@ -2,7 +2,7 @@ use crate::aabb::Aabb;
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
 use crate::ray::Ray;
-use crate::rtweekend::random_double;
+use crate::rtweekend::random_int_range;
 use crate::vec3::{Point3, Vec3};
 use std::sync::Arc;
 
@@ -49,21 +49,17 @@ impl Hittable for HittableList {
         self.bbox
     }
     fn pdf_value(&self, origin: Point3, direction: Vec3) -> f64 {
-        if self.objects.is_empty() {
-            return 0.0;
-        }
+        let weight = 1.0 / self.objects.len() as f64;
         let mut sum = 0.0;
-        for obj in &self.objects {
-            sum += obj.pdf_value(origin, direction);
+        for object in &self.objects {
+            sum += weight * object.pdf_value(origin, direction);
         }
-        sum / self.objects.len() as f64
+        sum
     }
 
     fn random(&self, origin: Vec3) -> Vec3 {
-        if self.objects.is_empty() {
-            return Vec3::new_vec3(0.0, 0.0, 0.0);
-        }
-        let idx = (random_double() * self.objects.len() as f64) as usize;
-        self.objects[idx].random(origin)
+        let int_size = self.objects.len() as i32;
+        let idx = random_int_range(0, int_size - 1);
+        self.objects[idx as usize].random(origin)
     }
 }

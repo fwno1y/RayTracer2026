@@ -547,12 +547,19 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
     )));
 
     let empty_material = Arc::new(EmptyMaterial);
-    let lights = Arc::new(Quad::new(
+    let mut lights = HittableList::new();
+    lights.add(Arc::new(Quad::new(
         Point3::new_vec3(343.0, 554.0, 332.0),
         Vec3::new_vec3(-130.0, 0.0, 0.0),
         Vec3::new_vec3(0.0, 0.0, -105.0),
         empty_material.clone(),
-    ));
+    )));
+    lights.add(Arc::new(Sphere::new(
+        Point3::new_vec3(190.0, 90.0, 190.0),
+        90.0,
+        empty_material.clone(),
+    )));
+    let lights = Arc::new(lights);
 
     let aspect_ratio = 1.0;
     let image_width = 600;
@@ -579,7 +586,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world, lights);
-    let path = std::path::Path::new("output/book3/image13.png");
+    let path = std::path::Path::new("output/book3/image14.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
