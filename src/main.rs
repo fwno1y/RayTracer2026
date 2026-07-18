@@ -531,23 +531,20 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         Vec3::new_vec3(0.0, 0.0, 105.0),
         light,
     )));
-    let aluminum = Arc::new(Metal::new(Color::new_vec3(0.8, 0.85, 0.88), 0.0));
     let mut box1: Arc<dyn Hittable> = make_box(
         Point3::new_vec3(0.0, 0.0, 0.0),
         Point3::new_vec3(165.0, 330.0, 165.0),
-        aluminum.clone(),
+        white.clone(),
     );
     box1 = Arc::new(RotateY::new(box1, 15.0));
     box1 = Arc::new(Translate::new(box1, Vec3::new_vec3(265.0, 0.0, 295.0)));
     world.add(box1);
-    let mut box2: Arc<dyn Hittable> = make_box(
-        Point3::new_vec3(0.0, 0.0, 0.0),
-        Point3::new_vec3(165.0, 165.0, 165.0),
-        white.clone(),
-    );
-    box2 = Arc::new(RotateY::new(box2, -18.0));
-    box2 = Arc::new(Translate::new(box2, Vec3::new_vec3(130.0, 0.0, 65.0)));
-    world.add(box2);
+    let glass = Arc::new(Dielectric::new(1.5));
+    world.add(Arc::new(Sphere::new(
+        Point3::new_vec3(190.0, 90.0, 190.0),
+        90.0,
+        glass,
+    )));
 
     let empty_material = Arc::new(EmptyMaterial);
     let lights = Arc::new(Quad::new(
@@ -582,7 +579,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world, lights);
-    let path = std::path::Path::new("output/book3/image12.png");
+    let path = std::path::Path::new("output/book3/image13.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
