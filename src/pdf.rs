@@ -1,6 +1,6 @@
 use crate::hittable::Hittable;
 use crate::onb::Onb;
-use crate::rtweekend::PI;
+use crate::rtweekend::{PI, random_double};
 use crate::vec3::{Point3, Vec3, dot, random_cosine_direction, random_unit_vector, unit_vector};
 
 #[allow(dead_code)]
@@ -62,5 +62,29 @@ impl<'a> Pdf for HittablePDF<'a> {
     fn generate(&self) -> Vec3 {
         self.objects
             .random(Vec3::new_vec3(self.origin.x, self.origin.y, self.origin.z))
+    }
+}
+
+pub struct MixturePDF<'a> {
+    p0: Box<dyn Pdf + 'a>,
+    p1: Box<dyn Pdf + 'a>,
+}
+
+impl<'a> MixturePDF<'a> {
+    pub fn new(p0: Box<dyn Pdf + 'a>, p1: Box<dyn Pdf + 'a>) -> Self {
+        Self { p0, p1 }
+    }
+}
+
+impl<'a> Pdf for MixturePDF<'a> {
+    fn value(&self, direction: Vec3) -> f64 {
+        0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction)
+    }
+    fn generate(&self) -> Vec3 {
+        if random_double() < 0.5 {
+            self.p0.generate()
+        } else {
+            self.p1.generate()
+        }
     }
 }

@@ -572,7 +572,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
 
     let aspect_ratio = 1.0;
     let image_width = 600;
-    let samples_per_pixel = 10;
+    let samples_per_pixel = 1000;
     let max_depth = 50;
     let background = Color::new_vec3(0.0, 0.0, 0.0);
     let vfov = 40.0;
@@ -595,7 +595,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world, &light_lists);
-    let path = std::path::Path::new("output/book3/image10.png");
+    let path = std::path::Path::new("output/book3/image11.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 

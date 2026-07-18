@@ -1,6 +1,6 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
-use crate::pdf::{HittablePDF, Pdf};
+use crate::pdf::{CosinePDF, HittablePDF, MixturePDF, Pdf};
 use crate::ray::Ray;
 use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
@@ -179,9 +179,11 @@ impl Camera {
         let mat = rec.mat.as_ref();
         let color_from_emission = mat.unwrap().emitted(r, &rec, rec.u, rec.v, &rec.p);
         if let Some((attenuation, _scattered, _pdf_value)) = mat.unwrap().scatter(r, &rec) {
-            let light_pdf = HittablePDF::new(lights, rec.p);
-            let scattered = Ray::new_ray(rec.p, light_pdf.generate(), r.time());
-            let pdf_value = light_pdf.value(scattered.direction());
+            let p0 = Box::new(HittablePDF::new(lights, rec.p));
+            let p1 = Box::new(CosinePDF::new(rec.normal));
+            let mixed_pdf = MixturePDF::new(p0, p1);
+            let scattered = Ray::new_ray(rec.p, mixed_pdf.generate(), r.time());
+            let pdf_value = mixed_pdf.value(scattered.direction());
             let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
             let sample_color = self.ray_color(&scattered, depth - 1, world, lights);
             let color_from_scatter = (attenuation * scattering_pdf * sample_color) / pdf_value;
