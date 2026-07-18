@@ -1,6 +1,7 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::interval::Interval;
-use crate::pdf::{CosinePDF, HittablePDF, MixturePDF, Pdf};
+use crate::material::ScatterRecord;
+use crate::pdf::{HittablePDF, MixturePDF, Pdf};
 use crate::ray::Ray;
 use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
@@ -8,6 +9,7 @@ use crate::vec3::{Point3, Vec3, cross, random_in_unit_disk, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
 use rayon::prelude::*;
+use std::sync::Arc;
 
 #[allow(dead_code)]
 pub struct Camera {
@@ -39,7 +41,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn render(&self, world: &dyn Hittable, lights: &dyn Hittable) -> RgbImage {
+    pub fn render(&self, world: &dyn Hittable, lights: Arc<dyn Hittable>) -> RgbImage {
         let width = self.image_width;
         let height = self.image_height;
         let mut img = RgbImage::new(width, height);
@@ -57,7 +59,7 @@ impl Camera {
                 for s_i in 0..self.sqrt_spp {
                     for s_j in 0..self.sqrt_spp {
                         let r = self.get_ray(i, j, s_i, s_j);
-                        pixel_color += self.ray_color(&r, self.max_depth, world, lights);
+                        pixel_color += self.ray_color(&r, self.max_depth, world, lights.clone());
                     }
                 }
                 pixel_color * self.pixel_samples_scale
@@ -168,7 +170,13 @@ impl Camera {
         self.center + (p[0] * self.defocus_disk_u) + (p[1] * self.defocus_disk_v)
     }
     #[allow(clippy::only_used_in_recursion)]
-    fn ray_color(&self, r: &Ray, depth: u32, world: &dyn Hittable, lights: &dyn Hittable) -> Color {
+    fn ray_color(
+        &self,
+        r: &Ray,
+        depth: u32,
+        world: &dyn Hittable,
+        lights: Arc<dyn Hittable>,
+    ) -> Color {
         if depth == 0 {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
@@ -176,20 +184,23 @@ impl Camera {
         if !world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
             return self.background;
         }
-        let mat = rec.mat.as_ref();
-        let color_from_emission = mat.unwrap().emitted(r, &rec, rec.u, rec.v, &rec.p);
-        if let Some((attenuation, _scattered, _pdf_value)) = mat.unwrap().scatter(r, &rec) {
-            let p0 = Box::new(HittablePDF::new(lights, rec.p));
-            let p1 = Box::new(CosinePDF::new(rec.normal));
-            let mixed_pdf = MixturePDF::new(p0, p1);
-            let scattered = Ray::new_ray(rec.p, mixed_pdf.generate(), r.time());
-            let pdf_value = mixed_pdf.value(scattered.direction());
-            let scattering_pdf = mat.unwrap().scattering_pdf(r, &rec, &scattered);
-            let sample_color = self.ray_color(&scattered, depth - 1, world, lights);
-            let color_from_scatter = (attenuation * scattering_pdf * sample_color) / pdf_value;
-            return color_from_emission + color_from_scatter;
+        let mut srec = ScatterRecord::default();
+        let mat = rec.mat.as_ref().unwrap();
+        let color_from_emission = mat.emitted(r, &rec, rec.u, rec.v, &rec.p);
+        if !mat.scatter(r, &rec, &mut srec) {
+            return color_from_emission;
         }
-        color_from_emission
+        if srec.skip_pdf {
+            return srec.attenuation * self.ray_color(&srec.skip_pdf_ray, depth - 1, world, lights.clone());
+        }
+        let light_ptr = Arc::new(HittablePDF::new(lights.clone(), rec.p));
+        let p = MixturePDF::new(light_ptr, srec.pdf_ptr.clone());
+        let scattered = Ray::new_ray(rec.p, p.generate(), r.time());
+        let pdf_value = p.value(scattered.direction());
+        let scattering_pdf = mat.scattering_pdf(r, &rec, &scattered);
+        let sample_color = self.ray_color(&scattered, depth - 1, world, lights);
+        let color_from_scatter = (srec.attenuation * scattering_pdf * sample_color) / pdf_value;
+        color_from_emission + color_from_scatter
     }
     fn sample_square_stratified(&self, s_i: u32, s_j: u32) -> Vec3 {
         let px = ((s_i as f64 + random_double()) * self.recip_sqrt_spp) - 0.5;

@@ -2,6 +2,7 @@ use crate::hittable::Hittable;
 use crate::onb::Onb;
 use crate::rtweekend::{PI, random_double};
 use crate::vec3::{Point3, Vec3, dot, random_cosine_direction, random_unit_vector, unit_vector};
+use std::sync::Arc;
 
 #[allow(dead_code)]
 pub trait Pdf {
@@ -13,8 +14,25 @@ pub trait Pdf {
     }
 }
 
-pub struct SpherePDF {}
+#[derive(Default)]
+pub struct EmptyPdf;
 
+impl Pdf for EmptyPdf {
+    fn value(&self, _direction: Vec3) -> f64 {
+        0.0
+    }
+    fn generate(&self) -> Vec3 {
+        Vec3::new_vec3(0.0, 0.0, 0.0)
+    }
+}
+
+pub struct SpherePDF;
+
+impl SpherePDF {
+    pub fn new() -> Self {
+        SpherePDF
+    }
+}
 impl Pdf for SpherePDF {
     fn value(&self, _direction: Vec3) -> f64 {
         1.0 / (4.0 * PI)
@@ -44,39 +62,39 @@ impl Pdf for CosinePDF {
     }
 }
 
-pub struct HittablePDF<'a> {
-    objects: &'a dyn Hittable,
+pub struct HittablePDF {
+    objects: Arc<dyn Hittable>,
     origin: Point3,
 }
 
-impl<'a> HittablePDF<'a> {
-    pub fn new(objects: &'a dyn Hittable, origin: Point3) -> HittablePDF<'a> {
-        HittablePDF { objects, origin }
+impl HittablePDF {
+    pub fn new(objects: Arc<dyn Hittable>, origin: Point3) -> Self {
+        Self { objects, origin }
     }
 }
 
-impl<'a> Pdf for HittablePDF<'a> {
+impl Pdf for HittablePDF {
     fn value(&self, direction: Vec3) -> f64 {
         self.objects.pdf_value(self.origin, direction)
     }
     fn generate(&self) -> Vec3 {
-        self.objects
-            .random(Vec3::new_vec3(self.origin.x, self.origin.y, self.origin.z))
+        self.objects.random(self.origin)
     }
 }
 
-pub struct MixturePDF<'a> {
-    p0: Box<dyn Pdf + 'a>,
-    p1: Box<dyn Pdf + 'a>,
+// 修改 MixturePDF：使用 Arc<dyn Pdf>，去掉生命周期
+pub struct MixturePDF {
+    p0: Arc<dyn Pdf>,
+    p1: Arc<dyn Pdf>,
 }
 
-impl<'a> MixturePDF<'a> {
-    pub fn new(p0: Box<dyn Pdf + 'a>, p1: Box<dyn Pdf + 'a>) -> Self {
+impl MixturePDF {
+    pub fn new(p0: Arc<dyn Pdf>, p1: Arc<dyn Pdf>) -> Self {
         Self { p0, p1 }
     }
 }
 
-impl<'a> Pdf for MixturePDF<'a> {
+impl Pdf for MixturePDF {
     fn value(&self, direction: Vec3) -> f64 {
         0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction)
     }
