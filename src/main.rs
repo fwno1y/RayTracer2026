@@ -586,7 +586,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         focus_dist,
     );
     let img: RgbImage = camera.render(&world, lights);
-    let path = std::path::Path::new("output/book3/image14.png");
+    let path = std::path::Path::new("output/book3/image15.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
 
