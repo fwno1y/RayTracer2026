@@ -191,7 +191,8 @@ impl Camera {
             return color_from_emission;
         }
         if srec.skip_pdf {
-            return srec.attenuation * self.ray_color(&srec.skip_pdf_ray, depth - 1, world, lights.clone());
+            return srec.attenuation
+                * self.ray_color(&srec.skip_pdf_ray, depth - 1, world, lights.clone());
         }
         let light_ptr = Arc::new(HittablePDF::new(lights.clone(), rec.p));
         let p = MixturePDF::new(light_ptr, srec.pdf_ptr.clone());
