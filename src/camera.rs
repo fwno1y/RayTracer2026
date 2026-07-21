@@ -5,6 +5,7 @@ use crate::pdf::{HittablePDF, MixturePDF, Pdf};
 use crate::ray::Ray;
 use crate::rtweekend::random_double;
 use crate::rtweekend::{INFINITY, degrees_to_radians};
+use crate::texture::Texture;
 use crate::vec3::{Point3, Vec3, cross, random_in_unit_disk, unit_vector};
 use crate::vec3color::{Color, linear_to_gemma};
 use image::RgbImage;
@@ -18,6 +19,7 @@ pub struct Camera {
     samples_per_pixel: u32,
     max_depth: u32,
     background: Color,
+    background_texture: Option<Arc<dyn Texture>>, //背景图
     // albedo: f64, //反射率
     vfov: f64,
     lookfrom: Point3,
@@ -56,10 +58,19 @@ impl Camera {
             .par_iter()
             .map(|&(i, j)| {
                 let mut pixel_color = Color::new_vec3(0.0, 0.0, 0.0);
+                let pixel_u = (i as f64 + 0.5) / width as f64;
+                let pixel_v = 1.0 - (j as f64 + 0.5) / height as f64;
                 for s_i in 0..self.sqrt_spp {
                     for s_j in 0..self.sqrt_spp {
                         let r = self.get_ray(i, j, s_i, s_j);
-                        pixel_color += self.ray_color(&r, self.max_depth, world, lights.clone());
+                        pixel_color += self.ray_color(
+                            &r,
+                            self.max_depth,
+                            world,
+                            lights.clone(),
+                            pixel_u,
+                            pixel_v,
+                        );
                     }
                 }
                 pixel_color * self.pixel_samples_scale
@@ -83,6 +94,7 @@ impl Camera {
         samples_per_pixel: u32,
         max_depth: u32,
         background: Color,
+        background_texture: Option<Arc<dyn Texture>>,
         vfov: f64,
         lookfrom: Point3,
         lookat: Point3,
@@ -126,6 +138,7 @@ impl Camera {
             samples_per_pixel,
             max_depth,
             background,
+            background_texture,
             vfov,
             lookfrom,
             lookat,
@@ -176,12 +189,18 @@ impl Camera {
         depth: u32,
         world: &dyn Hittable,
         lights: Arc<dyn Hittable>,
+        pixel_u: f64,
+        pixel_v: f64,
     ) -> Color {
         if depth == 0 {
             return Color::new_vec3(0.0, 0.0, 0.0);
         }
         let mut rec = HitRecord::default();
         if !world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
+            // ---- 新增背景纹理支持 ----
+            if let Some(tex) = &self.background_texture {
+                return tex.value(pixel_u, pixel_v, &Point3::new_vec3(0.0, 0.0, 0.0));
+            }
             return self.background;
         }
         let mut srec = ScatterRecord::default();
@@ -192,14 +211,21 @@ impl Camera {
         }
         if srec.skip_pdf {
             return srec.attenuation
-                * self.ray_color(&srec.skip_pdf_ray, depth - 1, world, lights.clone());
+                * self.ray_color(
+                    &srec.skip_pdf_ray,
+                    depth - 1,
+                    world,
+                    lights.clone(),
+                    pixel_u,
+                    pixel_v,
+                );
         }
         let light_ptr = Arc::new(HittablePDF::new(lights.clone(), rec.p));
         let p = MixturePDF::new(light_ptr, srec.pdf_ptr.clone());
         let scattered = Ray::new_ray(rec.p, p.generate(), r.time());
         let pdf_value = p.value(scattered.direction());
         let scattering_pdf = mat.scattering_pdf(r, &rec, &scattered);
-        let sample_color = self.ray_color(&scattered, depth - 1, world, lights);
+        let sample_color = self.ray_color(&scattered, depth - 1, world, lights, pixel_u, pixel_v);
         let color_from_scatter = (srec.attenuation * scattering_pdf * sample_color) / pdf_value;
         color_from_emission + color_from_scatter
     }

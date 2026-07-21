@@ -95,11 +95,18 @@ impl Texture for ImageTexture {
         let j = (v * (self.image.height() as f64)) as u32;
         let pixel = self.image.pixel_data(i, j);
         let color_scale = 1.0 / 255.0;
-        Color::new_vec3(
-            color_scale * pixel[0] as f64,
-            color_scale * pixel[1] as f64,
-            color_scale * pixel[2] as f64,
-        )
+        let r = color_scale * pixel[0] as f64;
+        let g = color_scale * pixel[1] as f64;
+        let b = color_scale * pixel[2] as f64;
+        // sRGB 转线性
+        fn srgb_to_linear(c: f64) -> f64 {
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        }
+        Color::new_vec3(srgb_to_linear(r), srgb_to_linear(g), srgb_to_linear(b))
     }
 }
 #[allow(dead_code)]

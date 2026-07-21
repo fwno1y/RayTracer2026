@@ -30,10 +30,10 @@ use std::sync::Arc;
 use crate::bvh::BvhNode;
 use crate::constant_medium::ConstantMedium;
 use crate::hittable::{Hittable, RotateY, Translate};
-use crate::material::{Dielectric, DiffuseLight, EmptyMaterial, Lambertian, Metal};
-use crate::model::load_obj_;
+use crate::material::{Dielectric, DiffuseLight, EmptyMaterial, Lambertian, Material, Metal};
+use crate::model::{load_obj_, load_scaled_obj};
 use crate::quad::{Quad, make_box};
-use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture};
+use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture, Texture};
 use crate::vec3color::Color;
 use console::style;
 use image::RgbImage;
@@ -141,6 +141,7 @@ fn bouncing_spheres() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -209,6 +210,7 @@ fn checkered_spheres() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -261,6 +263,7 @@ fn earth() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -320,6 +323,7 @@ fn perlin_spheres() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -401,6 +405,7 @@ fn quads() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -470,6 +475,7 @@ fn simple_light() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -578,6 +584,7 @@ fn cornell_box() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -689,6 +696,7 @@ fn cornell_smoke() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -846,6 +854,7 @@ fn final_scene(
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -873,7 +882,7 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
     let obj_path = std::path::PathBuf::from(manifest_dir)
         .join("doc")
         .join("assets")
-        .join("Mauser_98K.obj");
+        .join("objLamp.obj");
 
     let model_mat = Arc::new(Lambertian::from_color(Color::new_vec3(0.8, 0.6, 0.2)));
     let model_world = load_obj_(&obj_path, model_mat);
@@ -917,6 +926,7 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
         samples_per_pixel,
         max_depth,
         background,
+        None,
         vfov,
         lookfrom,
         lookat,
@@ -931,8 +941,176 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
     println!("Test OBJ image saved to {}", path.display());
     Ok(())
 }
+fn my_image() -> Result<(), Box<dyn std::error::Error>> {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let obj_path1 = std::path::PathBuf::from(&manifest_dir).join("doc/assets/objLamp.obj");
+    let obj_path2 = std::path::PathBuf::from(&manifest_dir).join("doc/assets/Mauser_98K.obj");
+
+    let mut world = HittableList::new();
+
+    let glass = Arc::new(Dielectric::new(1.5));
+    let mirror_chrome = Arc::new(Metal::new(Color::new_vec3(0.98, 0.98, 0.98), 0.0));
+    let gold_metallic = Arc::new(Metal::new(Color::new_vec3(0.92, 0.72, 0.25), 0.05));
+
+    let bright_marble = Arc::new(Lambertian::from_color(Color::new_vec3(0.85, 0.85, 0.88)));
+
+    let lake_mat = Arc::new(Metal::new(Color::new_vec3(0.65, 0.78, 0.88), 0.02));
+    let ground_lake = Arc::new(Sphere::new(
+        Point3::new_vec3(0.0, -1000.8, 0.0),
+        1000.0,
+        lake_mat,
+    ));
+    world.add(ground_lake);
+
+    let water_light_1 = Arc::new(Sphere::new(
+        Point3::new_vec3(-1.0, -0.65, 0.8),
+        0.13,
+        Arc::new(DiffuseLight::from_color(Color::new_vec3(18.0, 10.5, 3.0))),
+    ));
+    let water_light_2 = Arc::new(Sphere::new(
+        Point3::new_vec3(1.0, -0.65, 0.8),
+        0.13,
+        Arc::new(DiffuseLight::from_color(Color::new_vec3(18.0, 10.5, 3.0))),
+    ));
+    world.add(water_light_1);
+    world.add(water_light_2);
+
+    let outer_glass = Arc::new(Sphere::new(
+        Point3::new_vec3(0.0, 1.15, 0.0),
+        0.60,
+        glass.clone(),
+    ));
+    let inner_core = Arc::new(Sphere::new(
+        Point3::new_vec3(0.0, 1.15, 0.0),
+        0.22,
+        gold_metallic.clone(),
+    ));
+    world.add(outer_glass);
+    world.add(inner_core);
+
+    let pearl_indices = [-3, -2, -1, 1, 2, 3];
+    for &i in &pearl_indices {
+        let t = i as f64 / 3.0;
+        let px = t * 2.8;
+        let py = 1.75 - (t * t * 0.85);
+        let pz = -0.5 * (1.0 - t * t);
+        let sphere_pos = Point3::new_vec3(px, py, pz);
+        let radius = 0.14 - (t.abs() * 0.05);
+
+        let mat: Arc<dyn Material> = if i % 2 == 0 {
+            gold_metallic.clone()
+        } else {
+            glass.clone()
+        };
+        world.add(Arc::new(Sphere::new(sphere_pos, radius, mat)));
+    }
+
+    let base_left = Arc::new(Sphere::new(
+        Point3::new_vec3(-1.6, -0.5, 0.1),
+        0.35,
+        bright_marble.clone(),
+    ));
+    world.add(base_left);
+    let rifle_mat = Arc::new(Metal::new(Color::new_vec3(0.85, 0.85, 0.90), 0.05));
+    let rifle_mesh = load_scaled_obj(
+        &obj_path2,
+        rifle_mat,
+        1.15,
+        Vec3::new_vec3(-1.6, 0.22, 0.1),
+        -35.0,
+    );
+    world.add(BvhNode::from_list(rifle_mesh));
+
+    let base_right = Arc::new(Sphere::new(
+        Point3::new_vec3(1.6, -0.5, 0.1),
+        0.35,
+        bright_marble.clone(),
+    ));
+    world.add(base_right);
+    let lamp_mesh = load_scaled_obj(
+        &obj_path1,
+        gold_metallic.clone(),
+        0.85,
+        Vec3::new_vec3(1.6, 0.22, 0.1),
+        25.0,
+    );
+    world.add(BvhNode::from_list(lamp_mesh));
+
+    world.add(Arc::new(Sphere::new(
+        Point3::new_vec3(0.9, 0.5, 0.8),
+        0.18,
+        glass.clone(),
+    )));
+    world.add(Arc::new(Sphere::new(
+        Point3::new_vec3(-0.9, 0.45, 0.6),
+        0.14,
+        glass.clone(),
+    )));
+    world.add(Arc::new(Sphere::new(
+        Point3::new_vec3(-0.35, 1.8, -0.3),
+        0.10,
+        mirror_chrome.clone(),
+    )));
+
+    let sun_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(26.0, 20.0, 15.0)));
+    let sun_light = Arc::new(Sphere::new(Point3::new_vec3(4.0, 5.0, -3.0), 1.2, sun_mat));
+    world.add(sun_light.clone());
+
+    let fill_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(3.0, 4.5, 8.0)));
+    let fill_light = Arc::new(Sphere::new(Point3::new_vec3(-5.0, 3.5, 2.0), 0.8, fill_mat));
+    world.add(fill_light);
+
+    let empty_material = Arc::new(EmptyMaterial);
+    let mut lights_list = HittableList::new();
+    lights_list.add(Arc::new(Sphere::new(
+        Point3::new_vec3(4.0, 5.0, -3.0),
+        1.2,
+        empty_material,
+    )));
+    let lights = Arc::new(lights_list);
+
+    let background_texture: Option<Arc<dyn Texture>> = Some(Arc::new(ImageTexture::new("b1.png")));
+    let background_color = Color::new_vec3(0.04, 0.06, 0.1);
+
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width = 1200;
+    let samples_per_pixel = 200;
+    let max_depth = 50;
+
+    let lookfrom = Point3::new_vec3(0.0, 0.9, 4.6);
+    let lookat = Point3::new_vec3(0.0, 0.40, 0.0);
+    let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
+    let vfov = 34.0;
+    let defocus_angle = 0.0;
+    let focus_dist = 4.6;
+
+    let camera = Camera::initialize(
+        aspect_ratio,
+        image_width,
+        samples_per_pixel,
+        max_depth,
+        background_color,
+        background_texture,
+        vfov,
+        lookfrom,
+        lookat,
+        vup,
+        defocus_angle,
+        focus_dist,
+    );
+
+    let img = camera.render(&world, lights);
+    let path = std::path::Path::new("output/my_scene.png");
+    std::fs::create_dir_all(path.parent().unwrap())?;
+    img.save(path)?;
+    println!(
+        "Brightened Surreal Celestial scene saved to {}",
+        path.display()
+    );
+    Ok(())
+}
 fn main() {
-    match 7 {
+    match 11 {
         1 => bouncing_spheres().unwrap(),
         2 => checkered_spheres().unwrap(),
         3 => earth().unwrap(),
@@ -943,6 +1121,7 @@ fn main() {
         8 => cornell_smoke().unwrap(),
         9 => final_scene(800, 10000, 40).unwrap(),
         10 => test_obj().unwrap(),
+        11 => my_image().unwrap(),
         _ => {}
     }
 }
