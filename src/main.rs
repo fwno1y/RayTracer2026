@@ -31,7 +31,7 @@ use crate::bvh::BvhNode;
 use crate::constant_medium::ConstantMedium;
 use crate::hittable::{Hittable, RotateY, Translate};
 use crate::material::{Dielectric, DiffuseLight, EmptyMaterial, Lambertian, Material, Metal};
-use crate::model::{load_obj_, load_scaled_obj};
+use crate::model::{add_glowing_crystal, load_obj_, load_scaled_obj, load_scaled_obj_with_mtl};
 use crate::quad::{Quad, make_box};
 use crate::texture::{CheckerTexture, ImageTexture, NoiseTexture, Texture};
 use crate::vec3color::Color;
@@ -882,7 +882,7 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
     let obj_path = std::path::PathBuf::from(manifest_dir)
         .join("doc")
         .join("assets")
-        .join("objLamp.obj");
+        .join("my_model.obj");
 
     let model_mat = Arc::new(Lambertian::from_color(Color::new_vec3(0.8, 0.6, 0.2)));
     let model_world = load_obj_(&obj_path, model_mat);
@@ -943,17 +943,19 @@ fn test_obj() -> Result<(), Box<dyn std::error::Error>> {
 }
 fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let user_model_path = std::path::PathBuf::from(&manifest_dir).join("doc/assets/my_model.obj");
     let obj_path1 = std::path::PathBuf::from(&manifest_dir).join("doc/assets/objLamp.obj");
     let obj_path2 = std::path::PathBuf::from(&manifest_dir).join("doc/assets/Mauser_98K.obj");
 
     let mut world = HittableList::new();
 
+    // 基础防过曝材质环境
     let glass = Arc::new(Dielectric::new(1.5));
     let mirror_chrome = Arc::new(Metal::new(Color::new_vec3(0.98, 0.98, 0.98), 0.0));
     let gold_metallic = Arc::new(Metal::new(Color::new_vec3(0.92, 0.72, 0.25), 0.05));
-
     let bright_marble = Arc::new(Lambertian::from_color(Color::new_vec3(0.85, 0.85, 0.88)));
 
+    // 湖水介质
     let lake_mat = Arc::new(Metal::new(Color::new_vec3(0.65, 0.78, 0.88), 0.02));
     let ground_lake = Arc::new(Sphere::new(
         Point3::new_vec3(0.0, -1000.8, 0.0),
@@ -962,31 +964,112 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     ));
     world.add(ground_lake);
 
+    // 水面装饰霓虹球
     let water_light_1 = Arc::new(Sphere::new(
-        Point3::new_vec3(-1.0, -0.65, 0.8),
+        Point3::new_vec3(-1.0, -0.45, 0.8),
         0.13,
         Arc::new(DiffuseLight::from_color(Color::new_vec3(18.0, 10.5, 3.0))),
     ));
     let water_light_2 = Arc::new(Sphere::new(
-        Point3::new_vec3(1.0, -0.65, 0.8),
+        Point3::new_vec3(1.0, -0.45, 0.8),
         0.13,
         Arc::new(DiffuseLight::from_color(Color::new_vec3(18.0, 10.5, 3.0))),
     ));
     world.add(water_light_1);
     world.add(water_light_2);
 
+    // 顶部完整折射玻璃球
     let outer_glass = Arc::new(Sphere::new(
-        Point3::new_vec3(0.0, 1.15, 0.0),
-        0.60,
+        Point3::new_vec3(0.0, 1.02, -0.1),
+        0.40,
         glass.clone(),
     ));
     let inner_core = Arc::new(Sphere::new(
-        Point3::new_vec3(0.0, 1.15, 0.0),
-        0.22,
+        Point3::new_vec3(0.0, 1.02, -0.1),
+        0.14,
         gold_metallic.clone(),
     ));
     world.add(outer_glass);
     world.add(inner_core);
+
+    // -------------------------------------------------------------
+    // 【修改一】棚置聚强光大柔光板（彻底解决人物背光昏暗、发淡的问题）
+    // 调高强度（12.5 -> 35.0），并在距离人物更近的位置提供强力的正面白皙补光
+    // -------------------------------------------------------------
+
+    // 1. 右前方超强主柔光板（暖色棚光）
+    let key_softbox_pos = Point3::new_vec3(0.8, 0.6, 3.5);
+    let key_softbox_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(35.0, 30.0, 24.0)));
+    let key_softbox = Arc::new(Quad::new(
+        key_softbox_pos,
+        Vec3::new_vec3(1.8, 0.0, -0.5),
+        Vec3::new_vec3(0.0, 2.0, 0.0),
+        key_softbox_mat,
+    ));
+    world.add(key_softbox);
+
+    // 2. 左前方强力辅助柔光板（冷蓝色棚光）
+    let fill_softbox_pos = Point3::new_vec3(-2.2, 0.6, 3.5);
+    let fill_softbox_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(20.0, 23.0, 30.0)));
+    let fill_softbox = Arc::new(Quad::new(
+        fill_softbox_pos,
+        Vec3::new_vec3(1.8, 0.0, 0.5),
+        Vec3::new_vec3(0.0, 2.0, 0.0),
+        fill_softbox_mat,
+    ));
+    world.add(fill_softbox);
+
+    // -------------------------------------------------------------
+    // 【修改二】人物加载配置
+    // 1. 旋转量改为 270.0 (或者若仍有偏差，可微调为 -90.0)，让角色正面朝前，露出脸部
+    // 2. force_matte 设为 true，使用原本衣服纹理贴图的同时，去除强烈的高反射，使其更实在、更重实
+    // -------------------------------------------------------------
+    let fallback_mat = Arc::new(Lambertian::from_color(Color::new_vec3(0.85, 0.82, 0.80)));
+    let user_model_mesh = load_scaled_obj_with_mtl(
+        &user_model_path,
+        fallback_mat,
+        1.42,                             // 放大主角尺寸，突出视觉重点
+        Vec3::new_vec3(0.0, -0.06, 0.20), // 踩在水面上
+        270.0,                            // 核心人像朝向：270度（或-90度）面朝相机，摆脱后脑勺背对
+        true,                             // 开启哑光，将漫反射贴图淋漓尽致照亮，防止半透感
+    );
+    world.add(BvhNode::from_list(user_model_mesh));
+
+    // 氛围装饰水晶
+    add_glowing_crystal(
+        &mut world,
+        Point3::new_vec3(-0.95, 1.45, 0.3),
+        0.20,
+        -25.0,
+        glass.clone(),
+        Some(Color::new_vec3(2.0, 16.0, 22.0)),
+    );
+    add_glowing_crystal(
+        &mut world,
+        Point3::new_vec3(0.95, 1.45, 0.3),
+        0.20,
+        45.0,
+        glass.clone(),
+        Some(Color::new_vec3(24.0, 4.0, 18.0)),
+    );
+
+    // 折射小碎晶
+    add_glowing_crystal(
+        &mut world,
+        Point3::new_vec3(-0.6, -0.35, 0.8),
+        0.12,
+        12.0,
+        glass.clone(),
+        None,
+    );
+    add_glowing_crystal(
+        &mut world,
+        Point3::new_vec3(0.6, -0.35, 0.8),
+        0.12,
+        -12.0,
+        glass.clone(),
+        None,
+    );
 
     let pearl_indices = [-3, -2, -1, 1, 2, 3];
     for &i in &pearl_indices {
@@ -1052,35 +1135,54 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
         mirror_chrome.clone(),
     )));
 
+    // 背景夕阳（逆光轮廓辉光）
     let sun_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(26.0, 20.0, 15.0)));
     let sun_light = Arc::new(Sphere::new(Point3::new_vec3(4.0, 5.0, -3.0), 1.2, sun_mat));
     world.add(sun_light.clone());
 
+    // 侧翼天空补充泛光
     let fill_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(3.0, 4.5, 8.0)));
     let fill_light = Arc::new(Sphere::new(Point3::new_vec3(-5.0, 3.5, 2.0), 0.8, fill_mat));
     world.add(fill_light);
 
+    // -------------------------------------------------------------
+    // 【重要性采样】
+    // 将太阳和强力柔光灯板加入 PDF 采样，彻底净化暗面投射出的噪点
+    // -------------------------------------------------------------
     let empty_material = Arc::new(EmptyMaterial);
     let mut lights_list = HittableList::new();
     lights_list.add(Arc::new(Sphere::new(
         Point3::new_vec3(4.0, 5.0, -3.0),
         1.2,
-        empty_material,
+        empty_material.clone(),
+    )));
+    lights_list.add(Arc::new(Quad::new(
+        key_softbox_pos,
+        Vec3::new_vec3(1.8, 0.0, -0.5),
+        Vec3::new_vec3(0.0, 2.0, 0.0),
+        empty_material.clone(),
+    )));
+    lights_list.add(Arc::new(Quad::new(
+        fill_softbox_pos,
+        Vec3::new_vec3(1.8, 0.0, 0.5),
+        Vec3::new_vec3(0.0, 2.0, 0.0),
+        empty_material.clone(),
     )));
     let lights = Arc::new(lights_list);
 
     let background_texture: Option<Arc<dyn Texture>> = Some(Arc::new(ImageTexture::new("b1.png")));
-    let background_color = Color::new_vec3(0.04, 0.06, 0.1);
+    let background_color = Color::new_vec3(0.02, 0.03, 0.05); // 【修改三】稍微降低夜空溢出光，使 3D 主体更凸显
 
+    // 相机对焦与超高采样配置
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 1200;
-    let samples_per_pixel = 200;
+    let samples_per_pixel = 650;
     let max_depth = 50;
 
     let lookfrom = Point3::new_vec3(0.0, 0.9, 4.6);
     let lookat = Point3::new_vec3(0.0, 0.40, 0.0);
     let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
-    let vfov = 34.0;
+    let vfov = 25.5; // 【修改四】拉近视角，特写对焦，获得更高纹理像素精度限制
     let defocus_angle = 0.0;
     let focus_dist = 4.6;
 
@@ -1100,11 +1202,11 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let img = camera.render(&world, lights);
-    let path = std::path::Path::new("output/my_scene.png");
+    let path = std::path::Path::new("output/my_scene2.png");
     std::fs::create_dir_all(path.parent().unwrap())?;
     img.save(path)?;
     println!(
-        "Brightened Surreal Celestial scene saved to {}",
+        "High-contrast highlighted character scene saved to {}",
         path.display()
     );
     Ok(())

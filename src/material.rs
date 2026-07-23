@@ -206,3 +206,41 @@ impl Material for EmptyMaterial {
         0.0
     }
 }
+
+pub struct SelfLitLambertian {
+    tex: Arc<dyn Texture>,
+    emission: Color,
+}
+
+impl SelfLitLambertian {
+    #[allow(dead_code)]
+    pub fn from_color(albedo: Color, emission: Color) -> Self {
+        SelfLitLambertian {
+            tex: Arc::new(SolidColor::new(albedo)),
+            emission,
+        }
+    }
+    #[allow(dead_code)]
+    pub fn new(tex: Arc<dyn Texture>, emission: Color) -> Self {
+        SelfLitLambertian { tex, emission }
+    }
+}
+
+impl Material for SelfLitLambertian {
+    fn emitted(&self, _r_in: &Ray, rec: &HitRecord, _u: f64, _v: f64, _p: &Point3) -> Color {
+        if !rec.front_face {
+            return Color::new_vec3(0.0, 0.0, 0.0);
+        }
+        self.emission
+    }
+    fn scatter(&self, _r_in: &Ray, rec: &HitRecord, srec: &mut ScatterRecord) -> bool {
+        srec.attenuation = self.tex.value(rec.u, rec.v, &rec.p);
+        srec.pdf_ptr = Arc::new(CosinePDF::new(rec.normal));
+        srec.skip_pdf = false;
+        true
+    }
+    fn scattering_pdf(&self, _r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        let cos_theta = dot(rec.normal, unit_vector(scattered.direction()));
+        if cos_theta < 0.0 { 0.0 } else { cos_theta / PI }
+    }
+}
