@@ -949,7 +949,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut world = HittableList::new();
 
-    // 基础防过曝材质环境
+    // 基础材质
     let glass = Arc::new(Dielectric::new(1.5));
     let mirror_chrome = Arc::new(Metal::new(Color::new_vec3(0.98, 0.98, 0.98), 0.0));
     let gold_metallic = Arc::new(Metal::new(Color::new_vec3(0.92, 0.72, 0.25), 0.05));
@@ -978,7 +978,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     world.add(water_light_1);
     world.add(water_light_2);
 
-    // 顶部完整折射玻璃球
+    // 顶部折射玻璃球
     let outer_glass = Arc::new(Sphere::new(
         Point3::new_vec3(0.0, 1.02, -0.1),
         0.40,
@@ -992,12 +992,10 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     world.add(outer_glass);
     world.add(inner_core);
 
-    // -------------------------------------------------------------
-    // 【修改一】棚置聚强光大柔光板（彻底解决人物背光昏暗、发淡的问题）
+    // 棚置聚强光大柔光板
     // 调高强度（12.5 -> 35.0），并在距离人物更近的位置提供强力的正面白皙补光
-    // -------------------------------------------------------------
 
-    // 1. 右前方超强主柔光板（暖色棚光）
+    // 右前方柔光板（暖色光）
     let key_softbox_pos = Point3::new_vec3(0.8, 0.6, 3.5);
     let key_softbox_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(35.0, 30.0, 24.0)));
     let key_softbox = Arc::new(Quad::new(
@@ -1008,7 +1006,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     ));
     world.add(key_softbox);
 
-    // 2. 左前方强力辅助柔光板（冷蓝色棚光）
+    // 左前方柔光板（蓝色光）
     let fill_softbox_pos = Point3::new_vec3(-2.2, 0.6, 3.5);
     let fill_softbox_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(20.0, 23.0, 30.0)));
     let fill_softbox = Arc::new(Quad::new(
@@ -1019,11 +1017,8 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     ));
     world.add(fill_softbox);
 
-    // -------------------------------------------------------------
-    // 【修改二】人物加载配置
     // 1. 旋转量改为 270.0 (或者若仍有偏差，可微调为 -90.0)，让角色正面朝前，露出脸部
     // 2. force_matte 设为 true，使用原本衣服纹理贴图的同时，去除强烈的高反射，使其更实在、更重实
-    // -------------------------------------------------------------
     let fallback_mat = Arc::new(Lambertian::from_color(Color::new_vec3(0.85, 0.82, 0.80)));
     let user_model_mesh = load_scaled_obj_with_mtl(
         &user_model_path,
@@ -1035,7 +1030,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     );
     world.add(BvhNode::from_list(user_model_mesh));
 
-    // 氛围装饰水晶
+    // 装饰水晶
     add_glowing_crystal(
         &mut world,
         Point3::new_vec3(-0.95, 1.45, 0.3),
@@ -1053,7 +1048,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
         Some(Color::new_vec3(24.0, 4.0, 18.0)),
     );
 
-    // 折射小碎晶
+    // 折射水晶
     add_glowing_crystal(
         &mut world,
         Point3::new_vec3(-0.6, -0.35, 0.8),
@@ -1135,7 +1130,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
         mirror_chrome.clone(),
     )));
 
-    // 背景夕阳（逆光轮廓辉光）
+    // 背景夕阳
     let sun_mat = Arc::new(DiffuseLight::from_color(Color::new_vec3(26.0, 20.0, 15.0)));
     let sun_light = Arc::new(Sphere::new(Point3::new_vec3(4.0, 5.0, -3.0), 1.2, sun_mat));
     world.add(sun_light.clone());
@@ -1145,10 +1140,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     let fill_light = Arc::new(Sphere::new(Point3::new_vec3(-5.0, 3.5, 2.0), 0.8, fill_mat));
     world.add(fill_light);
 
-    // -------------------------------------------------------------
-    // 【重要性采样】
-    // 将太阳和强力柔光灯板加入 PDF 采样，彻底净化暗面投射出的噪点
-    // -------------------------------------------------------------
+    // 将太阳和柔光灯板加入 PDF 采样，彻底净化暗面投射出的噪点
     let empty_material = Arc::new(EmptyMaterial);
     let mut lights_list = HittableList::new();
     lights_list.add(Arc::new(Sphere::new(
@@ -1171,9 +1163,8 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     let lights = Arc::new(lights_list);
 
     let background_texture: Option<Arc<dyn Texture>> = Some(Arc::new(ImageTexture::new("b1.png")));
-    let background_color = Color::new_vec3(0.02, 0.03, 0.05); // 【修改三】稍微降低夜空溢出光，使 3D 主体更凸显
+    let background_color = Color::new_vec3(0.02, 0.03, 0.05); // 稍微降低夜空溢出光，使 3D 主体更凸显
 
-    // 相机对焦与超高采样配置
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 1200;
     let samples_per_pixel = 650;
@@ -1182,7 +1173,7 @@ fn my_image() -> Result<(), Box<dyn std::error::Error>> {
     let lookfrom = Point3::new_vec3(0.0, 0.9, 4.6);
     let lookat = Point3::new_vec3(0.0, 0.40, 0.0);
     let vup = Vec3::new_vec3(0.0, 1.0, 0.0);
-    let vfov = 25.5; // 【修改四】拉近视角，特写对焦，获得更高纹理像素精度限制
+    let vfov = 25.5;
     let defocus_angle = 0.0;
     let focus_dist = 4.6;
 

@@ -12,10 +12,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tobj::{LoadOptions, load_obj_buf};
 
-// ==========================================================
 // 跨版本编译适配器 (Version Compatibility Layers for tobj)
 // 用于自动抹平 tobj v3 和 v4 在材质字段上的类型差异
-// ==========================================================
 
 trait ToOptString {
     fn to_opt_string(&self) -> Option<String>;
@@ -79,9 +77,7 @@ impl IntoMaterialVec for Result<Vec<tobj::Material>, tobj::LoadError> {
     }
 }
 
-// ==========================================================
-// 业务几何加载函数
-// ==========================================================
+// 几何加载函数
 
 #[allow(dead_code)]
 pub fn load_obj_(path: &PathBuf, default_mat: Arc<dyn Material>) -> HittableList {
@@ -270,7 +266,7 @@ pub fn add_glowing_crystal(
     }
 }
 
-/// 支持加载 MTL 并具备「强制哑光模式」的 OBJ 导入函数
+// 支持加载 MTL 并具备「强制哑光模式」的 OBJ 导入函数
 pub fn load_scaled_obj_with_mtl(
     path: &std::path::PathBuf,
     fallback_mat: Arc<dyn Material>,
@@ -337,9 +333,7 @@ pub fn load_scaled_obj_with_mtl(
         }
     }
 
-    // --------------------------------------------------
     // 数据缩放变换和渲染列表输出
-    // --------------------------------------------------
     let mut min_x = f64::INFINITY;
     let mut min_y = f64::INFINITY;
     let mut min_z = f64::INFINITY;
